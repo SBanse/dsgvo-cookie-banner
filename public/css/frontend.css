@@ -1,0 +1,117 @@
+/* DCB Cookie Banner */
+:root {
+  --dcb-primary: #0073aa;
+  --dcb-text: #333;
+  --dcb-bg: #fff;
+  --dcb-radius: 8px;
+  --dcb-shadow: 0 4px 24px rgba(0,0,0,.18);
+}
+
+#dcb-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 99998;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Banner ── */
+#dcb-banner {
+  position: fixed;
+  z-index: 99999;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  box-shadow: var(--dcb-shadow);
+  background: var(--dcb-bg);
+  color: var(--dcb-text);
+  border-radius: var(--dcb-radius);
+  transition: transform .3s ease, opacity .3s ease;
+}
+
+#dcb-banner.dcb-pos-bottom { left: 0; right: 0; bottom: 0; border-radius: var(--dcb-radius) var(--dcb-radius) 0 0; }
+#dcb-banner.dcb-pos-top    { left: 0; right: 0; top: 0;    border-radius: 0 0 var(--dcb-radius) var(--dcb-radius); }
+#dcb-banner.dcb-pos-center { top: 50%; left: 50%; transform: translate(-50%,-50%); max-width: 540px; width: 94%; }
+
+#dcb-banner.dcb-layout-bar .dcb-banner-inner  { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 16px 24px; }
+#dcb-banner.dcb-layout-box .dcb-banner-inner  { padding: 28px 32px; max-width: 540px; margin: 0 auto; }
+
+.dcb-banner-title { font-size: 1.1em; font-weight: 700; margin: 0 0 6px; }
+.dcb-banner-text  { margin: 0; flex: 1; min-width: 220px; }
+
+.dcb-banner-btns  { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+.dcb-layout-bar .dcb-banner-btns { margin-top: 0; }
+
+.dcb-btn {
+  padding: 9px 18px; border-radius: 5px; border: 2px solid transparent;
+  cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: filter .15s;
+}
+.dcb-btn:hover { filter: brightness(1.08); }
+.dcb-btn-primary  { background: var(--dcb-primary); color: #fff; border-color: var(--dcb-primary); }
+.dcb-btn-secondary{ background: transparent; color: var(--dcb-primary); border-color: var(--dcb-primary); }
+.dcb-btn-text     { background: none; border: none; color: #666; font-weight: 500; text-decoration: underline; font-size: 13px; padding: 4px 8px; }
+
+.dcb-links { font-size: 12px; color: #888; margin-left: auto; }
+.dcb-links a { color: #888; }
+
+/* ── Detail Modal ── */
+#dcb-modal {
+  background: var(--dcb-bg);
+  border-radius: var(--dcb-radius);
+  width: 96%; max-width: 580px;
+  max-height: 90vh; overflow-y: auto;
+  padding: 28px 32px;
+  color: var(--dcb-text);
+  box-shadow: var(--dcb-shadow);
+}
+#dcb-modal h2 { margin-top: 0; }
+.dcb-modal-close { float: right; background: none; border: none; font-size: 22px; cursor: pointer; color: #888; margin-top: -4px; }
+
+.dcb-category {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.dcb-category-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; background: #f7f7f7; cursor: default;
+}
+.dcb-category-header label { flex: 1; font-weight: 600; cursor: pointer; }
+.dcb-category-desc { font-size: 13px; color: #666; padding: 8px 16px 12px; }
+
+/* Toggle switch */
+.dcb-toggle { position: relative; display: inline-block; width: 42px; height: 24px; }
+.dcb-toggle input { opacity: 0; width: 0; height: 0; }
+.dcb-slider {
+  position: absolute; inset: 0;
+  background: #ccc; border-radius: 24px; cursor: pointer;
+  transition: background .2s;
+}
+.dcb-slider::before {
+  content: ''; position: absolute;
+  left: 3px; bottom: 3px;
+  width: 18px; height: 18px;
+  background: #fff; border-radius: 50%;
+  transition: transform .2s;
+}
+.dcb-toggle input:checked + .dcb-slider { background: var(--dcb-primary); }
+.dcb-toggle input:checked + .dcb-slider::before { transform: translateX(18px); }
+.dcb-toggle input:disabled + .dcb-slider { opacity: .6; cursor: not-allowed; }
+
+.dcb-modal-btns { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+/* Cookie table in frontend */
+.dcb-cookie-category { margin-bottom: 30px; }
+.dcb-cookie-category h3 { font-size: 1.1em; border-bottom: 2px solid var(--dcb-primary); padding-bottom: 6px; margin-bottom: 8px; }
+.dcb-cookie-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.dcb-cookie-table th, .dcb-cookie-table td { border: 1px solid #e0e0e0; padding: 8px 10px; text-align: left; }
+.dcb-cookie-table th { background: #f5f5f5; font-weight: 600; }
+.dcb-cookie-table code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 12px; }
+.dcb-last-scan { color: #888; margin-bottom: 16px; }
+.dcb-reopen-banner { background: var(--dcb-primary); color: #fff; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+
+@media (max-width: 600px) {
+  #dcb-modal { padding: 20px 16px; }
+  #dcb-banner.dcb-layout-bar .dcb-banner-inner { padding: 14px 16px; }
+}

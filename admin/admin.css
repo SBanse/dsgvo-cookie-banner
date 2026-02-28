@@ -1,0 +1,10 @@
+.dcb-admin-wrap h1 { margin-bottom: 20px; }
+.dcb-tabs { display: flex; gap: 4px; margin-bottom: 0; border-bottom: 1px solid #c3c4c7; }
+.dcb-tab { background: #f0f0f1; border: 1px solid #c3c4c7; border-bottom: none; padding: 8px 16px; cursor: pointer; border-radius: 4px 4px 0 0; }
+.dcb-tab.active { background: #fff; position: relative; bottom: -1px; border-bottom: 1px solid #fff; font-weight: bold; }
+.dcb-tab-content { display: none; background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 20px; }
+.dcb-tab-content.active { display: block; }
+.dcb-scan-box { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 4px; }
+.dcb-manual-form { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 4px; }
+.dcb-shortcode-hint { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin-top: 20px; }
+#dcb-scan-status, #dcb-manual-status { margin-left: 12px; color: green; font-weight: 500; }
