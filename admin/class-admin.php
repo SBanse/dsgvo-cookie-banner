@@ -73,57 +73,69 @@ class DCB_Admin {
         check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
 
-        $stored = DCB_Cookie_Manager::get_detected_cookies();
-        $manual = $stored['manual'] ?? array();
-        $key    = sanitize_key( $_POST['cookie_name'] ?? '' );
-        $manual[ $key ] = array(
-            'name'     => sanitize_text_field( $_POST['cookie_name'] ?? '' ),
-            'category' => sanitize_text_field( $_POST['cookie_category'] ?? 'necessary' ),
-            'provider' => sanitize_text_field( $_POST['cookie_provider'] ?? '' ),
-            'purpose'  => sanitize_textarea_field( $_POST['cookie_purpose'] ?? '' ),
-            'duration' => sanitize_text_field( $_POST['cookie_duration'] ?? '' ),
+        $name = sanitize_text_field( $_POST['cookie_name'] ?? '' );
+        if ( empty( $name ) ) {
+            wp_send_json_error( array( 'message' => 'Kein Cookie-Name angegeben.' ) );
+        }
+
+        // Schlüssel = bereinigter Name (gleiche Logik wie beim Update)
+        $key  = sanitize_key( $name );
+
+        $data = array(
+            'name'     => $name,
+            'category' => $_POST['cookie_category'] ?? 'necessary',
+            'provider' => $_POST['cookie_provider']  ?? '',
+            'purpose'  => $_POST['cookie_purpose']   ?? '',
+            'duration' => $_POST['cookie_duration']  ?? '',
         );
-        $stored['manual'] = $manual;
-        DCB_Cookie_Manager::save_detected_cookies( $stored );
-        wp_send_json_success();
+
+        $ok = DCB_Cookie_Manager::update_cookie_entry( $key, $data );
+        if ( $ok ) {
+            wp_send_json_success();
+        } else {
+            wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen.' ) );
+        }
     }
 
     public function ajax_update_cookie() {
         check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
 
-        $stored  = DCB_Cookie_Manager::get_detected_cookies();
-        $key     = sanitize_key( $_POST['cookie_key'] ?? '' );
-        $section = sanitize_key( $_POST['section'] ?? 'auto' ); // 'auto' or 'manual'
+        $key  = sanitize_key( $_POST['cookie_key'] ?? '' );
+        if ( empty( $key ) ) {
+            wp_send_json_error( array( 'message' => 'Kein Schlüssel angegeben.' ) );
+        }
 
-        // Build updated cookie entry
-        $updated = array(
-            'name'     => sanitize_text_field( $_POST['name']     ?? '' ),
-            'category' => sanitize_text_field( $_POST['category'] ?? 'necessary' ),
-            'provider' => sanitize_text_field( $_POST['provider'] ?? '' ),
-            'purpose'  => sanitize_textarea_field( $_POST['purpose']  ?? '' ),
-            'duration' => sanitize_text_field( $_POST['duration'] ?? '' ),
+        $data = array(
+            'name'     => $_POST['name']     ?? '',
+            'category' => $_POST['category'] ?? 'necessary',
+            'provider' => $_POST['provider'] ?? '',
+            'purpose'  => $_POST['purpose']  ?? '',
+            'duration' => $_POST['duration'] ?? '',
         );
 
-        // Always save edits into 'manual' so auto-scan doesn't overwrite them
-        // Remove from auto if previously there
-        if ( isset( $stored['auto'][ $key ] ) ) {
-            unset( $stored['auto'][ $key ] );
-        }
-        $stored['manual'][ $key ] = $updated;
+        $ok = DCB_Cookie_Manager::update_cookie_entry( $key, $data );
 
-        DCB_Cookie_Manager::save_detected_cookies( $stored );
-        wp_send_json_success( array( 'cookie' => $updated ) );
+        if ( $ok ) {
+            // Gespeicherten Eintrag zurückgeben (sanitized)
+            $stored  = DCB_Cookie_Manager::get_detected_cookies();
+            $updated = $stored['manual'][ $key ] ?? $data;
+            wp_send_json_success( array( 'cookie' => $updated ) );
+        } else {
+            wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen. Bitte Cookie-Name prüfen.' ) );
+        }
     }
 
     public function ajax_delete_cookie() {
         check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-        $stored = DCB_Cookie_Manager::get_detected_cookies();
-        $key    = sanitize_key( $_POST['cookie_key'] ?? '' );
-        unset( $stored['manual'][ $key ] );
-        unset( $stored['auto'][ $key ] );
-        DCB_Cookie_Manager::save_detected_cookies( $stored );
+
+        $key = sanitize_key( $_POST['cookie_key'] ?? '' );
+        if ( empty( $key ) ) {
+            wp_send_json_error( array( 'message' => 'Kein Schlüssel angegeben.' ) );
+        }
+
+        DCB_Cookie_Manager::delete_cookie_entry( $key );
         wp_send_json_success();
     }
 

@@ -94,6 +94,64 @@ class DCB_Cookie_Manager {
         update_option( self::OPTION_COOKIES, $cookies );
     }
 
+    /**
+     * Aktualisiert einen einzelnen Cookie-Eintrag atomar in der Datenbank.
+     * Schreibt den Eintrag immer in 'manual', damit er beim nächsten Scan
+     * nicht durch den Auto-Scanner überschrieben wird.
+     *
+     * @param string $key     Interner Schlüssel des Eintrags
+     * @param array  $data    Neue Felder (name, category, provider, purpose, duration)
+     * @return bool           true wenn gespeichert, false bei Fehler
+     */
+    public static function update_cookie_entry( string $key, array $data ): bool {
+        // Felder bereinigen
+        $clean = array(
+            'name'     => sanitize_text_field( $data['name']     ?? '' ),
+            'category' => sanitize_text_field( $data['category'] ?? 'necessary' ),
+            'provider' => sanitize_text_field( $data['provider'] ?? '' ),
+            'purpose'  => sanitize_textarea_field( $data['purpose']  ?? '' ),
+            'duration' => sanitize_text_field( $data['duration'] ?? '' ),
+        );
+
+        if ( empty( $clean['name'] ) ) {
+            return false;
+        }
+
+        $stored = self::get_detected_cookies();
+
+        // Aus auto entfernen – der manuelle Eintrag hat Vorrang
+        if ( isset( $stored['auto'][ $key ] ) ) {
+            unset( $stored['auto'][ $key ] );
+        }
+
+        // In manual schreiben (global persistent)
+        $stored['manual'][ $key ] = $clean;
+
+        return update_option( self::OPTION_COOKIES, $stored );
+    }
+
+    /**
+     * Löscht einen Cookie-Eintrag aus auto UND manual.
+     *
+     * @param string $key  Interner Schlüssel
+     * @return bool
+     */
+    public static function delete_cookie_entry( string $key ): bool {
+        $stored = self::get_detected_cookies();
+        $changed = false;
+
+        if ( isset( $stored['auto'][ $key ] ) ) {
+            unset( $stored['auto'][ $key ] );
+            $changed = true;
+        }
+        if ( isset( $stored['manual'][ $key ] ) ) {
+            unset( $stored['manual'][ $key ] );
+            $changed = true;
+        }
+
+        return $changed ? update_option( self::OPTION_COOKIES, $stored ) : false;
+    }
+
     public static function log_consent( $consent_id, $data ) {
         $settings = self::get_settings();
         if ( empty( $settings['log_consents'] ) ) return;
