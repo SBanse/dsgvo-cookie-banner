@@ -1,10 +1,56 @@
+/* ── General ── */
 .dcb-admin-wrap h1 { margin-bottom: 20px; }
+
+/* ── Tabs ── */
 .dcb-tabs { display: flex; gap: 4px; margin-bottom: 0; border-bottom: 1px solid #c3c4c7; }
 .dcb-tab { background: #f0f0f1; border: 1px solid #c3c4c7; border-bottom: none; padding: 8px 16px; cursor: pointer; border-radius: 4px 4px 0 0; }
 .dcb-tab.active { background: #fff; position: relative; bottom: -1px; border-bottom: 1px solid #fff; font-weight: bold; }
 .dcb-tab-content { display: none; background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 20px; }
 .dcb-tab-content.active { display: block; }
-.dcb-scan-box { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 4px; }
-.dcb-manual-form { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin-bottom: 20px; border-radius: 4px; }
+
+/* ── Scan box ── */
+.dcb-scan-box { background: #f9f9f9; border: 1px solid #ddd; padding: 18px 20px; margin-bottom: 20px; border-radius: 4px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+#dcb-scan-status { color: #2271b1; font-weight: 500; }
+
+/* ── Table header row ── */
+.dcb-table-header { display:flex; align-items:center; justify-content:space-between; margin: 20px 0 8px; }
+
+/* ── Category sections ── */
+.dcb-cat-section { margin-bottom: 28px; }
+.dcb-cat-heading { display:flex; align-items:center; gap:10px; margin-bottom:6px; padding:6px 0; border-bottom: 2px solid #e0e0e0; }
+.dcb-cat-count { color:#666; font-size:13px; }
+.dcb-cat-desc-inline { color:#888; font-size:12px; font-style:italic; flex:1; }
+
+/* ── Category badges ── */
+.dcb-cat-badge, .dcb-badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; white-space:nowrap; }
+.dcb-badge-necessary,   .dcb-cat-badge.dcb-badge-necessary   { background:#d4edda; color:#155724; }
+.dcb-badge-statistics,  .dcb-cat-badge.dcb-badge-statistics  { background:#d1ecf1; color:#0c5460; }
+.dcb-badge-marketing,   .dcb-cat-badge.dcb-badge-marketing   { background:#fff3cd; color:#856404; }
+.dcb-badge-preferences, .dcb-cat-badge.dcb-badge-preferences { background:#e2d9f3; color:#432874; }
+
+/* ── Edit table ── */
+.dcb-cookie-edit-table { border-collapse: collapse; }
+.dcb-cookie-edit-table th { background:#f8f8f8; font-weight:600; font-size:12px; }
+.dcb-cookie-edit-table td, .dcb-cookie-edit-table th { padding:8px 10px; vertical-align:top; }
+.dcb-cookie-edit-table tr:hover td { background:#fafafa; }
+.dcb-cookie-edit-table tr.dcb-editing td { background:#fffbec !important; }
+.dcb-cookie-edit-table code { background:#f0f0f0; padding:2px 6px; border-radius:3px; font-size:12px; }
+.dcb-cookie-edit-table .dcb-in-purpose { width:100%; min-width:160px; box-sizing:border-box; }
+.dcb-cookie-edit-table .dcb-in-name,
+.dcb-cookie-edit-table .dcb-in-provider { width:100%; box-sizing:border-box; }
+.dcb-row-actions { white-space:nowrap; }
+.dcb-row-actions .button { margin-bottom:2px; }
+.dcb-edit-btn { background:#2271b1; color:#fff; border-color:#2271b1; }
+.dcb-edit-btn:hover { background:#135e96; color:#fff; border-color:#135e96; }
+.dcb-save-btn { margin-bottom:4px !important; }
+
+/* ── Add form ── */
+.dcb-manual-form { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; margin: 12px 0 20px; border-radius: 4px; }
+#dcb-add-row-form h2 { margin-top: 24px; }
+.dcb-empty-notice { padding:20px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; color:#666; }
+
+/* ── Hint ── */
 .dcb-shortcode-hint { background: #fff3cd; border: 1px solid #ffc107; padding: 12px 16px; border-radius: 4px; margin-top: 20px; }
-#dcb-scan-status, #dcb-manual-status { margin-left: 12px; color: green; font-weight: 500; }
+
+/* ── Manual/auto status ── */
+#dcb-manual-status { font-weight:500; }

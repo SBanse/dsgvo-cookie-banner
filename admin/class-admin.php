@@ -7,8 +7,9 @@ class DCB_Admin {
         add_action( 'admin_menu',            array( $this, 'add_menu' ) );
         add_action( 'admin_init',            array( $this, 'register_settings' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-        add_action( 'wp_ajax_dcb_scan',      array( $this, 'ajax_scan' ) );
+        add_action( 'wp_ajax_dcb_scan',         array( $this, 'ajax_scan' ) );
         add_action( 'wp_ajax_dcb_save_manual_cookie', array( $this, 'ajax_save_manual' ) );
+        add_action( 'wp_ajax_dcb_update_cookie', array( $this, 'ajax_update_cookie' ) );
         add_action( 'wp_ajax_dcb_delete_cookie', array( $this, 'ajax_delete_cookie' ) );
     }
 
@@ -85,6 +86,34 @@ class DCB_Admin {
         $stored['manual'] = $manual;
         DCB_Cookie_Manager::save_detected_cookies( $stored );
         wp_send_json_success();
+    }
+
+    public function ajax_update_cookie() {
+        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $stored  = DCB_Cookie_Manager::get_detected_cookies();
+        $key     = sanitize_key( $_POST['cookie_key'] ?? '' );
+        $section = sanitize_key( $_POST['section'] ?? 'auto' ); // 'auto' or 'manual'
+
+        // Build updated cookie entry
+        $updated = array(
+            'name'     => sanitize_text_field( $_POST['name']     ?? '' ),
+            'category' => sanitize_text_field( $_POST['category'] ?? 'necessary' ),
+            'provider' => sanitize_text_field( $_POST['provider'] ?? '' ),
+            'purpose'  => sanitize_textarea_field( $_POST['purpose']  ?? '' ),
+            'duration' => sanitize_text_field( $_POST['duration'] ?? '' ),
+        );
+
+        // Always save edits into 'manual' so auto-scan doesn't overwrite them
+        // Remove from auto if previously there
+        if ( isset( $stored['auto'][ $key ] ) ) {
+            unset( $stored['auto'][ $key ] );
+        }
+        $stored['manual'][ $key ] = $updated;
+
+        DCB_Cookie_Manager::save_detected_cookies( $stored );
+        wp_send_json_success( array( 'cookie' => $updated ) );
     }
 
     public function ajax_delete_cookie() {
