@@ -185,3 +185,82 @@
 
 /* Block hint in frontend shortcode table */
 .dcb-block-hint { margin-top: 6px; color: #666; }
+
+/* ── Help Tab ──────────────────────────────────────────────────────────────── */
+.dcb-help-wrap { max-width: 900px; }
+
+.dcb-help-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 18px;
+}
+.dcb-help-section h3 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+.dcb-help-section p { margin: 0 0 10px; }
+.dcb-help-section .description { color: #666; font-size: 12px; margin-top: 8px; }
+
+.dcb-help-table { margin-top: 4px; }
+.dcb-help-table th { font-weight: 600; background: #f8f9fa; }
+.dcb-help-table td, .dcb-help-table th { padding: 8px 12px; }
+.dcb-help-table code { font-size: 12px; background: #f0f6fc; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+
+/* Code pair: before / after */
+.dcb-help-code-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0;
+}
+@media (max-width: 700px) { .dcb-help-code-pair { grid-template-columns: 1fr; } }
+
+.dcb-help-code-block {
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+.dcb-code-label {
+    display: block;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.dcb-code-before .dcb-code-label { background: #fef3f2; color: #b91c1c; border-bottom: 1px solid #fecaca; }
+.dcb-code-after  .dcb-code-label { background: #f0fdf4; color: #166534; border-bottom: 1px solid #bbf7d0; }
+.dcb-help-code-block pre {
+    margin: 0;
+    padding: 12px 14px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+/* Checklist */
+.dcb-help-checklist {
+    list-style: none;
+    padding: 0; margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 20px;
+}
+@media (max-width: 600px) { .dcb-help-checklist { grid-template-columns: 1fr; } }
+.dcb-help-checklist li::before { content: '✅ '; }
+.dcb-help-checklist li { font-size: 13px; padding: 3px 0; }
+
+/* Footer */
+.dcb-help-footer {
+    background: #f8f9fa;
+    font-size: 12px;
+    color: #555;
+    padding: 12px 18px;
+}

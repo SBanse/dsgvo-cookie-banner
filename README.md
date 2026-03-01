@@ -1,251 +1,238 @@
-# 🍪 DSGVO Cookie Banner
+# DSGVO Cookie Banner
 
-> Datenschutzkonformer Cookie-Banner für WordPress – vollständig DSGVO/GDPR-konform, mit automatischem Cookie-Scanner und Shortcode-Integration für Datenschutzerklärung und Impressum.
+**DSGVO/GDPR-konformer Cookie-Banner für WordPress** mit automatischem Cookie-Scanner, Script-Blocking, Einbettungs-Platzhaltern für YouTube/Maps/Social Media und Einwilligungsprotokoll.
 
-![WordPress](https://img.shields.io/badge/WordPress-5.8%2B-blue?logo=wordpress)
-![PHP](https://img.shields.io/badge/PHP-7.4%2B-purple?logo=php)
-![Lizenz](https://img.shields.io/badge/Lizenz-GPL--2.0-green)
-![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+Version: **1.2.0** · Lizenz: GPL-2.0+ · PHP: 7.0+ · WordPress: 5.8+
 
 ---
 
-## 📋 Inhaltsverzeichnis
+## Features
 
-- [Features](#-features)
-- [Screenshots](#-screenshots)
-- [Installation](#-installation)
-- [Shortcodes](#-shortcodes)
-- [Script-Blocking](#-script-blocking)
-- [DSGVO-Compliance](#-dsgvo-compliance)
-- [Anforderungen](#-anforderungen)
-- [Changelog](#-changelog)
-- [Lizenz](#-lizenz)
-
----
-
-## ✨ Features
-
-### Banner
-- 🎨 Vollständig anpassbares Design (Farben, Position, Layout)
-- 📍 3 Positionen: Unten, Oben, Mitte (Modal)
-- 🧩 2 Layouts: Leiste oder Box
-- 🌐 Texte vollständig editierbar im Backend
-
-### DSGVO-Konformität
-- ✅ **Kein Pre-Ticking** – nur "Notwendige" Cookies sind vorausgewählt
-- ✅ **Gleichwertige Buttons** – kein Dark Pattern (Ablehnen ist genauso einfach wie Akzeptieren)
-- ✅ **Granulare Kategorien** – Nutzer wählt einzelne Kategorien
-- ✅ **Widerruf jederzeit** möglich via Shortcode-Button
-- ✅ **Einwilligungsprotokoll** mit Zeitstempel und IP-Hash (Nachweispflicht)
-- ✅ **Link zur Datenschutzerklärung** direkt im Banner
-
-### Cookie-Scanner
-- 🔍 Automatische Erkennung aktiver Plugins & Themes
-- 📚 Datenbank mit 30+ bekannten Cookies (Google, Facebook, YouTube, Stripe u.v.m.)
-- ✏️ Cookies manuell ergänzen oder löschen
-- 📊 Übersicht nach Kategorien (Notwendig, Statistik, Marketing, Präferenzen)
-
-### Shortcodes
-- `[dcb_cookie_list]` – Cookie-Tabelle für Datenschutz-/Impressumseite
-- `[dcb_privacy_settings]` – Button zum Wiederöffnen der Einstellungen
+| Feature | Beschreibung |
+|---|---|
+| 🍪 **Cookie-Banner** | DSGVO-konform, kein Pre-Ticking, gleichwertige Buttons |
+| 🔍 **Cookie-Scanner** | Erkennt automatisch WordPress-Plugins, Theme und bekannte Dienste |
+| 🔒 **Script-Blocking** | Scripts laden erst nach Einwilligung der Besucher |
+| 🖼️ **Embed-Platzhalter** | YouTube, Vimeo, Google Maps, Instagram, X/Twitter, Facebook, OpenStreetMap |
+| 📋 **Shortcodes** | Cookie-Liste, Einstellungs-Button, alle Einbettungs-Typen |
+| 📊 **Einwilligungsprotokoll** | IP-Hash + Zeitstempel für DSGVO-Nachweispflicht |
+| 🌍 **Zweisprachig** | Vollständig auf Deutsch und Englisch |
+| 🎨 **Anpassbares Design** | Farben, Position, Layout, Kategorien-Namen, Platzhalter-Texte |
 
 ---
 
-## 🖼 Screenshots
+## Installation
 
-### Cookie-Banner (Frontend)
-Der Banner erscheint beim ersten Besuch am unteren Seitenrand. Über „Einstellungen" öffnet sich ein Modal zur granularen Auswahl.
-
-### Cookie-Scanner (Backend)
-Unter **WordPress Admin → Cookie Banner → Cookie-Scanner** können Scans gestartet und Cookies manuell verwaltet werden.
-
-### Cookie-Liste (Datenschutzseite)
-Der Shortcode `[dcb_cookie_list]` gibt eine formatierte Tabelle aller erkannten Cookies aus:
-
-| Name | Anbieter | Zweck | Laufzeit |
-|------|----------|-------|----------|
-| `_ga` | Google Analytics | Unterscheidet Nutzer und Sitzungen | 2 Jahre |
-| `_fbp` | Facebook / Meta | Facebook-Tracking-Pixel | 3 Monate |
-| `dcb_consent` | Diese Website | Speichert Ihre Cookie-Einwilligung | 1 Jahr |
+1. ZIP herunterladen
+2. In WordPress: **Plugins → Installieren → Plugin hochladen**
+3. Aktivieren
+4. **Cookie Banner → Cookie-Scanner** → Scan starten
+5. `[dcb_cookie_list]` auf Datenschutzseite einfügen
+6. Unter **Einstellungen** Datenschutz- und Impressumsseite verknüpfen
 
 ---
 
-## 🚀 Installation
+## Shortcodes
 
-### Methode 1: ZIP-Upload (empfohlen)
-
-1. [Neueste Version herunterladen](../../releases/latest)
-2. WordPress Admin → **Plugins → Installieren → Plugin hochladen**
-3. ZIP-Datei auswählen und installieren
-4. Plugin aktivieren
-
-### Methode 2: Manuell via FTP
-
-```bash
-# Repository klonen
-git clone https://github.com/sbanse/dsgvo-cookie-banner.git
-
-# In den WordPress-Plugin-Ordner kopieren
-cp -r dsgvo-cookie-banner /var/www/html/wp-content/plugins/
-```
-
-Danach Plugin im WordPress-Backend aktivieren.
-
-### Ersteinrichtung
-
-1. **Cookie Banner → Cookie-Scanner** → Scan starten
-2. Erkannte Cookies prüfen, ggf. manuell ergänzen
-3. **Cookie Banner → Einstellungen** → Texte und Design anpassen
-4. `[dcb_cookie_list]` in die Datenschutzerklärung einfügen
-5. `[dcb_privacy_settings]` optional in Datenschutz-Footer einfügen
-
----
-
-## 📌 Shortcodes
-
-### `[dcb_cookie_list]`
-
-Gibt alle erkannten Cookies als formatierte Tabelle aus (nach Kategorien gruppiert).
+### Cookie-Liste (für Datenschutzseite)
 
 ```
 [dcb_cookie_list]
-```
-
-Nur eine bestimmte Kategorie anzeigen:
-
-```
 [dcb_cookie_list category="statistics"]
 [dcb_cookie_list category="marketing"]
-[dcb_cookie_list category="necessary"]
-[dcb_cookie_list category="preferences"]
 ```
 
-### `[dcb_privacy_settings]`
-
-Fügt einen Button ein, mit dem Nutzer ihre Cookie-Einstellungen jederzeit ändern können (Pflicht laut DSGVO).
+### Einstellungs-Button (zum Widerruf der Einwilligung)
 
 ```
 [dcb_privacy_settings]
-[dcb_privacy_settings text="Cookie-Einstellungen anpassen"]
+[dcb_privacy_settings text="Cookie-Einstellungen ändern"]
 ```
 
 ---
 
-## 🔒 Script-Blocking
+## Einbettungs-Platzhalter
 
-Um Drittanbieter-Scripts erst nach Einwilligung zu laden, ändern Sie den `type`-Attribut und fügen Sie `data-dcb-category` hinzu:
+Externe Inhalte werden erst nach Einwilligung geladen. Der Besucher sieht einen Info-Platzhalter mit zwei Buttons: **Einmal laden** oder **Immer für [Dienst] erlauben**.
 
-**Vorher:**
+### Verfügbare Shortcodes
+
+| Dienst | Shortcode | Parameter |
+|---|---|---|
+| **YouTube** | `[dcb_youtube]` | `id`, `width`, `height`, `thumbnail` |
+| **Vimeo** | `[dcb_vimeo]` | `id`, `width`, `height` |
+| **Google Maps** | `[dcb_googlemaps]` | `src`, `width`, `height` |
+| **Google Maps (iFrame)** | `[dcb_googlemaps_iframe]` | `src`, `width`, `height` |
+| **OpenStreetMap** | `[dcb_openstreetmap]` | `lat`, `lng`, `zoom`, `width`, `height` |
+| **Instagram** | `[dcb_instagram]` | `url` |
+| **X / Twitter** | `[dcb_twitter]` | `url` |
+| **Facebook** | `[dcb_facebook]` | `url` |
+| **Generisch** | `[dcb_embed]` | `type`, `id`, `src`, `url`, `width`, `height` |
+
+### Beispiele
+
+```
+[dcb_youtube id="dQw4w9WgXcQ" width="100%" height="400"]
+
+[dcb_googlemaps src="https://maps.google.com/maps?q=Berlin&output=embed" height="450"]
+
+[dcb_openstreetmap lat="52.52" lng="13.40" zoom="14" height="400"]
+
+[dcb_instagram url="https://www.instagram.com/p/ABC123/"]
+```
+
+### Eigene Einbettungs-Typen
+
+Im Admin unter **Cookie Banner → Einbettungen → Neuen Typ hinzufügen** können beliebige Dienste (TikTok, Spotify, Twitch, ...) mit eigenem Icon, Farben und Texten (DE + EN) angelegt werden. Der Shortcode lautet dann automatisch `[dcb_TYPNAME]`.
+
+---
+
+## Script-Blocking
+
+Externe Scripts blockieren bis zur Einwilligung:
+
 ```html
-<script src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+<!-- Vorher -->
+<script src="https://www.googletagmanager.com/gtag/js?id=G-XXXX"></script>
+
+<!-- Nachher: type + data-dcb-category ergänzen -->
+<script
+  type="text/plain"
+  data-dcb-category="statistics"
+  src="https://www.googletagmanager.com/gtag/js?id=G-XXXX">
+</script>
 ```
 
-**Nachher:**
-```html
-<script type="text/plain" data-dcb-category="statistics" src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
-```
+Das Script wird automatisch aktiviert, wenn der Besucher der Kategorie zustimmt.
 
-Das Script wird automatisch aktiviert, sobald der Nutzer die entsprechende Kategorie akzeptiert.
+### Verfügbare Kategorien (Standard)
 
-**Verfügbare Kategorien:**
+| Kategorie | `data-dcb-category` |
+|---|---|
+| Notwendig | `necessary` |
+| Statistik | `statistics` |
+| Marketing | `marketing` |
+| Präferenzen | `preferences` |
 
-| Wert | Beschreibung |
-|------|-------------|
-| `necessary` | Immer aktiv, keine Einwilligung nötig |
-| `statistics` | z. B. Google Analytics, Matomo, Hotjar |
-| `marketing` | z. B. Facebook Pixel, Google Ads |
-| `preferences` | z. B. Live-Chat, Spracheinstellungen |
+> Kategorie-Schlüssel können unter **Einstellungen → Kategorien** angepasst werden.
 
 ---
 
-## 🛡 DSGVO-Compliance
+## Kategorien anpassen
 
-Dieses Plugin wurde nach den Anforderungen der **DSGVO (EU) 2016/679** und den Leitlinien des **Europäischen Datenschutzausschusses (EDPB)** entwickelt.
+Unter **Einstellungen → Kategorien** können Sie für jede Kategorie einstellen:
 
-### Checkliste
-
-| Anforderung | Status |
-|-------------|--------|
-| Einwilligung vor Setzen nicht-notwendiger Cookies | ✅ |
-| Ablehnen genauso einfach wie Akzeptieren | ✅ |
-| Kein Pre-Ticking (außer notwendige Cookies) | ✅ |
-| Granulare Kategorienauswahl | ✅ |
-| Nachweis der Einwilligung (Protokoll) | ✅ |
-| Widerruf der Einwilligung jederzeit möglich | ✅ |
-| Link zur Datenschutzerklärung im Banner | ✅ |
-| IP-Adressen werden nur als SHA-256-Hash gespeichert | ✅ |
-
-> **Hinweis:** Dieses Plugin ist ein technisches Hilfsmittel. Eine vollständige Rechtsberatung durch einen Datenschutzbeauftragten wird empfohlen.
+- **Bezeichnung** – Angezeigter Name im Banner
+- **Beschreibung** – Erklärungstext für Besucher
+- **Shortcode-Schlüssel** – Für `[dcb_cookie_list category="…"]`
+- **Blockierungs-Schlüssel** – Für `data-dcb-category="…"`
 
 ---
 
-## 📦 Bekannte Cookies in der Scanner-Datenbank
+## JavaScript-Event
 
-<details>
-<summary>Vollständige Liste anzeigen</summary>
+Nach jeder Einwilligung (auch beim Seitenaufruf mit gespeicherter Einwilligung) feuert das Plugin das Event `dcb:consent` auf `document`:
 
-| Cookie | Anbieter | Kategorie |
-|--------|----------|-----------|
-| `_ga`, `_gid`, `_gat` | Google Analytics | Statistik |
-| `_gac_*` | Google Ads | Marketing |
-| `_pk_id.*`, `_pk_ses.*` | Matomo | Statistik |
-| `_fbp`, `fr` | Facebook / Meta | Marketing |
-| `_gcl_au` | Google Tag Manager | Marketing |
-| `_hj*` | Hotjar | Statistik |
-| `YSC`, `VISITOR_INFO1_LIVE` | YouTube (Google) | Marketing |
-| `li_gc`, `lidc` | LinkedIn | Marketing |
-| `guest_id`, `_twitter_sess` | Twitter / X | Marketing |
-| `__stripe_mid`, `__stripe_sid` | Stripe | Notwendig |
-| `__cfduid`, `__cf_bm` | Cloudflare | Notwendig |
-| `woocommerce_*`, `wp_woocommerce_*` | WooCommerce | Notwendig |
-| `wordpress_logged_in_*`, `wp-settings-*` | WordPress | Notwendig |
-| `PHPSESSID` | PHP | Notwendig |
-| `dcb_consent` | Diese Website | Notwendig |
+```javascript
+document.addEventListener('dcb:consent', function(e) {
+    var consent = e.detail;
+    // consent.categories = { necessary: true, statistics: false, ... }
 
-</details>
-
----
-
-## ⚙️ Anforderungen
-
-- **WordPress:** 5.8 oder höher
-- **PHP:** 7.4 oder höher
-- **MySQL:** 5.6 oder höher
-- **Browser:** Alle modernen Browser (Chrome, Firefox, Safari, Edge)
-
----
-
-## 📝 Changelog
-
-### 1.0.0 – Erstveröffentlichung
-- Cookie-Banner mit 4 Kategorien
-- Automatischer Cookie-Scanner
-- Einwilligungsprotokoll
-- Script-Blocking
-- Shortcodes `[dcb_cookie_list]` und `[dcb_privacy_settings]`
-- Admin-UI mit Einstellungen, Scanner und Protokoll-Ansicht
-
----
-
-## 🤝 Beitragen
-
-Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue öffnen.
-
-```bash
-git clone https://github.com/sbanse/dsgvo-cookie-banner.git
-cd dsgvo-cookie-banner
-# Änderungen vornehmen
-git checkout -b feature/meine-funktion
-git commit -m "feat: meine neue Funktion"
-git push origin feature/meine-funktion
+    if (consent.categories.statistics) {
+        // Google Analytics initialisieren
+        gtag('config', 'G-XXXXXXXX');
+    }
+    if (consent.categories.marketing) {
+        // Facebook Pixel initialisieren
+        fbq('init', 'XXXXXXXX');
+    }
+});
 ```
 
 ---
 
-## 📄 Lizenz
+## Admin-Bereich
 
-Dieses Plugin ist unter der [GPL-2.0 Lizenz](https://www.gnu.org/licenses/gpl-2.0.html) veröffentlicht.
+| Seite | Beschreibung |
+|---|---|
+| **Einstellungen** | Banner-Texte, Farben, Position, Kategorien, Datenschutz-/Impressumsseite |
+| **Cookie-Scanner** | Automatischer Scan, manuelle Einträge, Inline-Bearbeitung |
+| **Einbettungen** | Platzhalter-Typen verwalten, Texte/Farben anpassen, eigene Typen erstellen |
+| **Einwilligungen** | Protokoll aller Einwilligungen mit IP-Hash und Zeitstempel |
+| **Hilfe** | Vollständige Shortcode-Referenz, Script-Blocking-Anleitung, Compliance-Checkliste |
 
 ---
 
-<p align="center">Mit ❤️ für die DSGVO-Compliance entwickelt</p>
+## DSGVO-Compliance
+
+- ✅ Kein Pre-Ticking – nur „Notwendige" vorausgewählt
+- ✅ Granulare Kategorien – kein reines „Alle akzeptieren"
+- ✅ Einwilligungsprotokoll mit IP-Hash und Zeitstempel
+- ✅ Widerruf jederzeit möglich
+- ✅ Link zur Datenschutzerklärung im Banner
+- ✅ Gleichwertige Buttons – kein Dark Pattern
+- ✅ Script-Blocking verhindert vorzeitiges Laden
+- ✅ Embed-Platzhalter für Drittanbieter-Inhalte
+- ✅ YouTube nutzt `youtube-nocookie.com`
+- ✅ Keine Daten an externe Dienste
+
+> **Hinweis:** Das Plugin implementiert die technischen Anforderungen der DSGVO. Eine rechtliche Garantie kann kein Plugin geben – Prüfung durch einen Datenschutzbeauftragten empfohlen.
+
+---
+
+## Dateistruktur
+
+```
+dsgvo-cookie-banner/
+├── dsgvo-cookie-banner.php          # Plugin-Hauptdatei
+├── includes/
+│   ├── class-cookie-manager.php     # Einstellungen, Cookies, Einwilligungen
+│   ├── class-cookie-scanner.php     # Automatischer Cookie-Scanner
+│   ├── class-shortcodes.php         # [dcb_cookie_list], [dcb_privacy_settings]
+│   ├── class-embeds.php             # Einbettungs-Typen (CRUD)
+│   ├── class-embed-shortcodes.php   # Embed-Shortcodes Frontend
+│   └── class-i18n.php               # DE/EN Übersetzungen
+├── admin/
+│   ├── class-admin.php              # Admin-Menü, Einstellungen, AJAX
+│   ├── admin.css / admin.js         # Admin-Assets
+│   ├── embeds.css / embeds.js       # Embed-Admin-Assets
+│   └── views/
+│       ├── settings.php             # Einstellungsseite (alle Tabs)
+│       ├── scanner.php              # Cookie-Scanner-Seite
+│       ├── embeds.php               # Einbettungen-Seite
+│       └── consents.php             # Einwilligungsprotokoll
+└── public/
+    ├── class-frontend.php           # Frontend-Assets, Banner-HTML
+    ├── css/frontend.css             # Banner-Styles
+    ├── css/embeds.css               # Embed-Platzhalter-Styles
+    ├── js/frontend.js               # Banner-Logik, Consent-Management
+    └── js/embeds.js                 # Embed-Placeholder-Interaktion
+```
+
+---
+
+## Changelog
+
+### 1.2.0
+- NEU: Einbettungs-Platzhalter (YouTube, Vimeo, Google Maps, OpenStreetMap, Instagram, X, Facebook)
+- NEU: Admin-Seite „Einbettungen" mit vollständigem CRUD
+- NEU: Eigene Einbettungs-Typen erstellen
+- NEU: Hilfe-Tab vollständig überarbeitet
+- NEU: README.md und readme.txt aktualisiert
+- FIX: PHP 7.0+ Kompatibilität (entfernt: typed properties, arrow functions, str_starts_with)
+- FIX: AJAX nutzt `wp_verify_nonce` statt `check_ajax_referer` für JSON-sichere Fehlerantworten
+- FIX: Output-Buffer leeren vor JSON (verhindert Fehler durch PHP-Notices)
+
+### 1.1.0
+- NEU: Vollständiges DE/EN-Sprachsystem
+- NEU: Kategorien bearbeitbar (Label, Beschreibung, Schlüssel)
+- NEU: Live-Vorschau der Kategorie-Schlüssel
+
+### 1.0.0
+- Erstveröffentlichung
+
+---
+
+## Lizenz
+
+GPL-2.0+ · https://www.gnu.org/licenses/gpl-2.0.html
