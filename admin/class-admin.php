@@ -7,11 +7,22 @@ class DCB_Admin {
         add_action( 'admin_menu',            array( $this, 'add_menu' ) );
         add_action( 'admin_init',            array( $this, 'register_settings' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-        add_action( 'wp_ajax_dcb_scan',         array( $this, 'ajax_scan' ) );
+
+        // Cookie AJAX
+        add_action( 'wp_ajax_dcb_scan',              array( $this, 'ajax_scan' ) );
         add_action( 'wp_ajax_dcb_save_manual_cookie', array( $this, 'ajax_save_manual' ) );
-        add_action( 'wp_ajax_dcb_update_cookie', array( $this, 'ajax_update_cookie' ) );
-        add_action( 'wp_ajax_dcb_delete_cookie', array( $this, 'ajax_delete_cookie' ) );
+        add_action( 'wp_ajax_dcb_update_cookie',     array( $this, 'ajax_update_cookie' ) );
+        add_action( 'wp_ajax_dcb_delete_cookie',     array( $this, 'ajax_delete_cookie' ) );
+
+        // Embed AJAX
+        add_action( 'wp_ajax_dcb_embed_save',   array( $this, 'ajax_embed_save' ) );
+        add_action( 'wp_ajax_dcb_embed_toggle', array( $this, 'ajax_embed_toggle' ) );
+        add_action( 'wp_ajax_dcb_embed_reset',  array( $this, 'ajax_embed_reset' ) );
+        add_action( 'wp_ajax_dcb_embed_delete', array( $this, 'ajax_embed_delete' ) );
+        add_action( 'wp_ajax_dcb_embed_create', array( $this, 'ajax_embed_create' ) );
     }
+
+    /* ── Menu ──────────────────────────────────────────────────────────────── */
 
     public function add_menu() {
         add_menu_page(
@@ -23,10 +34,14 @@ class DCB_Admin {
             'dashicons-privacy',
             85
         );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_settings'), DCB_I18n::t('admin_submenu_settings'), 'manage_options', 'dcb-settings',  array( $this, 'render_settings_page' ) );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_scanner'),  DCB_I18n::t('admin_submenu_scanner'),  'manage_options', 'dcb-scanner',   array( $this, 'render_scanner_page' ) );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents',  array( $this, 'render_consents_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_settings'), DCB_I18n::t('admin_submenu_settings'), 'manage_options', 'dcb-settings', array( $this, 'render_settings_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_scanner'),  DCB_I18n::t('admin_submenu_scanner'),  'manage_options', 'dcb-scanner',  array( $this, 'render_scanner_page' ) );
+        $embeds_label = DCB_I18n::get_lang() === 'de' ? '🖼️ Einbettungen' : '🖼️ Embeds';
+        add_submenu_page( 'dcb-settings', $embeds_label, $embeds_label, 'manage_options', 'dcb-embeds',   array( $this, 'render_embeds_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents', array( $this, 'render_consents_page' ) );
     }
+
+    /* ── Settings registration ─────────────────────────────────────────────── */
 
     public function register_settings() {
         register_setting( 'dcb_options_group', DCB_Cookie_Manager::OPTION_SETTINGS, array(
@@ -37,7 +52,6 @@ class DCB_Admin {
     public function sanitize_settings( $input ) {
         $clean = array();
 
-        // Language (must be processed first so category labels can be updated)
         $allowed_langs = array_keys( DCB_I18n::available_languages() );
         $clean['plugin_language'] = in_array( $input['plugin_language'] ?? '', $allowed_langs, true )
             ? $input['plugin_language']
@@ -54,21 +68,13 @@ class DCB_Admin {
         $clean['privacy_page_id']= absint( $input['privacy_page_id'] ?? 0 );
         $clean['imprint_page_id']= absint( $input['imprint_page_id'] ?? 0 );
         $clean['auto_block_scripts'] = ! empty( $input['auto_block_scripts'] );
-        $clean['log_consents']   = ! empty( $input['log_consents'] );
+        $clean['log_consents']       = ! empty( $input['log_consents'] );
 
-        // When language changes, update the category labels/descriptions to match
-        // but keep the required flag unchanged
-        $prev       = DCB_Cookie_Manager::get_settings();
-        $prev_lang  = $prev['plugin_language'] ?? 'de';
-        $new_lang   = $clean['plugin_language'];
-
-        $prev       = DCB_Cookie_Manager::get_settings();
-        $prev_lang  = $prev['plugin_language'] ?? 'de';
-        $new_lang   = $clean['plugin_language'];
+        $prev      = DCB_Cookie_Manager::get_settings();
+        $prev_lang = $prev['plugin_language'] ?? 'de';
+        $new_lang  = $clean['plugin_language'];
 
         if ( $prev_lang !== $new_lang ) {
-            // Language switched: rebuild categories in new language
-            // But preserve any custom shortcode_key / block_key the user set
             $new_defaults = DCB_Cookie_Manager::default_categories( $new_lang );
             $prev_cats    = $prev['categories'] ?? array();
             foreach ( $new_defaults as $key => $cat ) {
@@ -79,8 +85,7 @@ class DCB_Admin {
             }
             $clean['categories'] = $new_defaults;
 
-            // Also reset banner texts if unchanged
-            $old_defaults = DCB_Cookie_Manager::default_settings_for_lang( $prev_lang );
+            $old_defaults  = DCB_Cookie_Manager::default_settings_for_lang( $prev_lang );
             $lang_defaults = DCB_Cookie_Manager::default_settings_for_lang( $new_lang );
             foreach ( array( 'banner_title', 'banner_text', 'accept_all_text', 'accept_necessary_text', 'customize_text', 'save_settings_text' ) as $f ) {
                 if ( $clean[ $f ] === $old_defaults[ $f ] || $clean[ $f ] === $prev[ $f ] ) {
@@ -88,21 +93,19 @@ class DCB_Admin {
                 }
             }
         } else {
-            // Same language – save user-submitted category edits
-            $defaults = DCB_Cookie_Manager::default_categories( $new_lang );
+            $defaults       = DCB_Cookie_Manager::default_categories( $new_lang );
             $submitted_cats = $input['categories'] ?? array();
-            $clean_cats = array();
+            $clean_cats     = array();
 
             foreach ( $defaults as $key => $default_cat ) {
                 $sub = $submitted_cats[ $key ] ?? array();
                 $clean_cats[ $key ] = array(
-                    'label'         => sanitize_text_field( $sub['label']         ?? $default_cat['label'] ),
-                    'description'   => sanitize_textarea_field( $sub['description'] ?? $default_cat['description'] ),
-                    'required'      => (bool) ( $default_cat['required'] ),   // required is never user-changeable
-                    'shortcode_key' => sanitize_key( $sub['shortcode_key'] ?? $key ),
-                    'block_key'     => sanitize_key( $sub['block_key']     ?? $key ),
+                    'label'         => sanitize_text_field(      $sub['label']         ?? $default_cat['label'] ),
+                    'description'   => sanitize_textarea_field(  $sub['description']   ?? $default_cat['description'] ),
+                    'required'      => (bool)( $default_cat['required'] ),
+                    'shortcode_key' => sanitize_key(             $sub['shortcode_key'] ?? $key ),
+                    'block_key'     => sanitize_key(             $sub['block_key']     ?? $key ),
                 );
-                // Fallback: keys must not be empty
                 if ( empty( $clean_cats[ $key ]['shortcode_key'] ) ) $clean_cats[ $key ]['shortcode_key'] = $key;
                 if ( empty( $clean_cats[ $key ]['block_key'] ) )     $clean_cats[ $key ]['block_key']     = $key;
             }
@@ -112,16 +115,30 @@ class DCB_Admin {
         return $clean;
     }
 
+    /* ── Assets ────────────────────────────────────────────────────────────── */
+
     public function enqueue_assets( $hook ) {
         if ( strpos( $hook, 'dcb-' ) === false ) return;
+
+        // Base admin assets (all pages)
         wp_enqueue_style(  'dcb-admin', DCB_PLUGIN_URL . 'admin/admin.css', array(), DCB_VERSION );
         wp_enqueue_script( 'dcb-admin', DCB_PLUGIN_URL . 'admin/admin.js',  array( 'jquery' ), DCB_VERSION, true );
         wp_localize_script( 'dcb-admin', 'DCBAdmin', array(
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'dcb_admin_nonce' ),
+            'lang'     => DCB_I18n::get_lang(),
             'i18n'     => DCB_I18n::all(),
         ) );
+
+        // Embeds page: extra assets
+        if ( strpos( $hook, 'dcb-embeds' ) !== false ) {
+            wp_enqueue_style(  'dcb-embeds-admin', DCB_PLUGIN_URL . 'admin/embeds.css', array(), DCB_VERSION );
+            wp_enqueue_style(  'dcb-embeds-front', DCB_PLUGIN_URL . 'public/css/embeds.css', array(), DCB_VERSION );
+            wp_enqueue_script( 'dcb-embeds-admin', DCB_PLUGIN_URL . 'admin/embeds.js', array( 'jquery', 'dcb-admin' ), DCB_VERSION, true );
+        }
     }
+
+    /* ── Cookie AJAX handlers ──────────────────────────────────────────────── */
 
     public function ajax_scan() {
         check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
@@ -135,13 +152,9 @@ class DCB_Admin {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
 
         $name = sanitize_text_field( $_POST['cookie_name'] ?? '' );
-        if ( empty( $name ) ) {
-            wp_send_json_error( array( 'message' => 'Kein Cookie-Name angegeben.' ) );
-        }
+        if ( empty( $name ) ) wp_send_json_error( array( 'message' => 'No cookie name given.' ) );
 
-        // Schlüssel = bereinigter Name (gleiche Logik wie beim Update)
         $key  = sanitize_key( $name );
-
         $data = array(
             'name'     => $name,
             'category' => $_POST['cookie_category'] ?? 'necessary',
@@ -150,22 +163,17 @@ class DCB_Admin {
             'duration' => $_POST['cookie_duration']  ?? '',
         );
 
-        $ok = DCB_Cookie_Manager::update_cookie_entry( $key, $data );
-        if ( $ok ) {
-            wp_send_json_success();
-        } else {
-            wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen.' ) );
-        }
+        DCB_Cookie_Manager::update_cookie_entry( $key, $data )
+            ? wp_send_json_success()
+            : wp_send_json_error( array( 'message' => 'Save failed.' ) );
     }
 
     public function ajax_update_cookie() {
         check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
 
-        $key  = sanitize_key( $_POST['cookie_key'] ?? '' );
-        if ( empty( $key ) ) {
-            wp_send_json_error( array( 'message' => 'Kein Schlüssel angegeben.' ) );
-        }
+        $key = sanitize_key( $_POST['cookie_key'] ?? '' );
+        if ( empty( $key ) ) wp_send_json_error( array( 'message' => 'No key given.' ) );
 
         $data = array(
             'name'     => $_POST['name']     ?? '',
@@ -175,15 +183,12 @@ class DCB_Admin {
             'duration' => $_POST['duration'] ?? '',
         );
 
-        $ok = DCB_Cookie_Manager::update_cookie_entry( $key, $data );
-
-        if ( $ok ) {
-            // Gespeicherten Eintrag zurückgeben (sanitized)
+        if ( DCB_Cookie_Manager::update_cookie_entry( $key, $data ) ) {
             $stored  = DCB_Cookie_Manager::get_detected_cookies();
             $updated = $stored['manual'][ $key ] ?? $data;
             wp_send_json_success( array( 'cookie' => $updated ) );
         } else {
-            wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen. Bitte Cookie-Name prüfen.' ) );
+            wp_send_json_error( array( 'message' => 'Save failed.' ) );
         }
     }
 
@@ -192,13 +197,113 @@ class DCB_Admin {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
 
         $key = sanitize_key( $_POST['cookie_key'] ?? '' );
-        if ( empty( $key ) ) {
-            wp_send_json_error( array( 'message' => 'Kein Schlüssel angegeben.' ) );
-        }
-
-        DCB_Cookie_Manager::delete_cookie_entry( $key );
+        if ( ! empty( $key ) ) DCB_Cookie_Manager::delete_cookie_entry( $key );
         wp_send_json_success();
     }
+
+    /* ── Embed AJAX handlers ───────────────────────────────────────────────── */
+
+    private function embed_nonce_check(): void {
+        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+    }
+
+    public function ajax_embed_save() {
+        $this->embed_nonce_check();
+
+        $id = sanitize_key( $_POST['embed_id'] ?? '' );
+        if ( ! $id ) wp_send_json_error( array( 'message' => 'No embed ID.' ) );
+
+        // Get current embed so we can merge (preserve id, preview_type etc.)
+        $current = DCB_Embeds::get_embed( $id ) ?? array();
+
+        $data = DCB_Embeds::sanitise_embed( array_merge( $current, $_POST, array( 'id' => $id ) ) );
+        // Keep enabled state and preview_type from existing
+        $data['enabled']      = $current['enabled']      ?? true;
+        $data['preview_type'] = $current['preview_type'] ?? 'color';
+
+        DCB_Embeds::save_embed( $id, $data );
+        wp_send_json_success( array( 'embed' => $data ) );
+    }
+
+    public function ajax_embed_toggle() {
+        $this->embed_nonce_check();
+
+        $id      = sanitize_key( $_POST['embed_id'] ?? '' );
+        $enabled = ! empty( $_POST['enabled'] );
+
+        $current = DCB_Embeds::get_embed( $id );
+        if ( ! $current ) wp_send_json_error( array( 'message' => 'Unknown embed.' ) );
+
+        $current['enabled'] = $enabled;
+        DCB_Embeds::save_embed( $id, $current );
+        wp_send_json_success();
+    }
+
+    public function ajax_embed_reset() {
+        $this->embed_nonce_check();
+
+        $id = sanitize_key( $_POST['embed_id'] ?? '' );
+        DCB_Embeds::delete_embed( $id ); // removes from saved → falls back to default
+        wp_send_json_success();
+    }
+
+    public function ajax_embed_delete() {
+        $this->embed_nonce_check();
+
+        $id       = sanitize_key( $_POST['embed_id'] ?? '' );
+        $defaults = DCB_Embeds::default_embed_types();
+
+        if ( isset( $defaults[ $id ] ) ) {
+            wp_send_json_error( array( 'message' => 'Cannot delete built-in embed types. Use "Disable" instead.' ) );
+        }
+
+        DCB_Embeds::delete_embed( $id );
+        wp_send_json_success();
+    }
+
+    public function ajax_embed_create() {
+        $this->embed_nonce_check();
+
+        $id    = sanitize_key( $_POST['embed_id'] ?? '' );
+        $label = sanitize_text_field( $_POST['label']    ?? '' );
+        $cat   = sanitize_text_field( $_POST['category'] ?? 'marketing' );
+        $icon  = sanitize_text_field( $_POST['icon']     ?? '▶' );
+
+        if ( ! $id || ! $label ) {
+            wp_send_json_error( array( 'message' => 'ID and label are required.' ) );
+        }
+
+        $existing = DCB_Embeds::get_embeds();
+        if ( isset( $existing[ $id ] ) ) {
+            wp_send_json_error( array( 'message' => 'An embed with this ID already exists.' ) );
+        }
+
+        $new_embed = array(
+            'id'                   => $id,
+            'label'                => $label,
+            'category'             => $cat,
+            'icon'                 => $icon,
+            'preview_type'         => 'color',
+            'placeholder_title_de' => $label,
+            'placeholder_title_en' => $label,
+            'placeholder_text_de'  => 'Dieser Inhalt wird von ' . $label . ' bereitgestellt. Mit dem Laden stimmen Sie der Datenschutzerklärung zu.',
+            'placeholder_text_en'  => 'This content is provided by ' . $label . '. By loading it, you agree to their privacy policy.',
+            'btn_text_de'          => 'Inhalt laden',
+            'btn_text_en'          => 'Load content',
+            'always_text_de'       => 'Immer für ' . $label . ' erlauben',
+            'always_text_en'       => 'Always allow ' . $label,
+            'bg_color'             => '#1a1a1a',
+            'accent_color'         => '#0073aa',
+            'text_color'           => '#ffffff',
+            'enabled'              => true,
+        );
+
+        DCB_Embeds::save_embed( $id, $new_embed );
+        wp_send_json_success( array( 'embed' => $new_embed ) );
+    }
+
+    /* ── Page renderers ────────────────────────────────────────────────────── */
 
     public function render_settings_page() {
         $settings = DCB_Cookie_Manager::get_settings();
@@ -209,6 +314,11 @@ class DCB_Admin {
     public function render_scanner_page() {
         $stored = DCB_Cookie_Manager::get_detected_cookies();
         include DCB_PLUGIN_DIR . 'admin/views/scanner.php';
+    }
+
+    public function render_embeds_page() {
+        $embeds = DCB_Embeds::get_embeds();
+        include DCB_PLUGIN_DIR . 'admin/views/embeds.php';
     }
 
     public function render_consents_page() {

@@ -18,6 +18,10 @@ class DCB_Frontend {
         wp_enqueue_style(  'dcb-frontend', DCB_PLUGIN_URL . 'public/css/frontend.css', array(), DCB_VERSION );
         wp_enqueue_script( 'dcb-frontend', DCB_PLUGIN_URL . 'public/js/frontend.js',   array(), DCB_VERSION, true );
 
+        // Embed placeholder assets (loaded only if embed shortcodes are used on this page)
+        wp_enqueue_style(  'dcb-embeds', DCB_PLUGIN_URL . 'public/css/embeds.css', array(), DCB_VERSION );
+        wp_enqueue_script( 'dcb-embeds', DCB_PLUGIN_URL . 'public/js/embeds.js',   array( 'dcb-frontend' ), DCB_VERSION, true );
+
         $privacy_url = $this->settings['privacy_page_id'] ? get_permalink( $this->settings['privacy_page_id'] ) : '#';
         $imprint_url = $this->settings['imprint_page_id'] ? get_permalink( $this->settings['imprint_page_id'] ) : '#';
 

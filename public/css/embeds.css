@@ -1,0 +1,168 @@
+/* ──────────────────────────────────────────────────────────
+   DCB Embed Placeholders – Frontend Styles
+   ────────────────────────────────────────────────────────── */
+
+/* Wrapper */
+.dcb-embed-wrap {
+    display: block;
+    max-width: 100%;
+    position: relative;
+    font-family: inherit;
+}
+
+/* Thumbnail background (YouTube preview image) */
+.dcb-embed-thumb {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    z-index: 0;
+    border-radius: 4px;
+    filter: brightness(0.45);
+}
+
+/* The placeholder itself */
+.dcb-embed-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 32px 24px;
+    background: var(--dcb-embed-bg, #1a1a1a);
+    color: var(--dcb-embed-tc, #fff);
+    border-radius: 4px;
+    box-sizing: border-box;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    min-height: 220px;
+    transition: background 0.2s;
+}
+
+/* Large icon */
+.dcb-embed-icon {
+    font-size: 42px;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+/* Info block */
+.dcb-embed-info {
+    max-width: 480px;
+}
+.dcb-embed-title {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--dcb-embed-tc, #fff);
+}
+.dcb-embed-text {
+    font-size: 13px;
+    line-height: 1.55;
+    opacity: 0.82;
+    margin: 0;
+    color: var(--dcb-embed-tc, #fff);
+}
+
+/* Buttons */
+.dcb-embed-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 320px;
+}
+
+.dcb-embed-load-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    line-height: 1.3;
+}
+.dcb-embed-load-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+.dcb-embed-load-btn:active { transform: translateY(0); }
+
+/* Primary "load once" button */
+.dcb-embed-load-once {
+    background: var(--dcb-embed-accent, #ff0000);
+    color: var(--dcb-embed-tc, #fff);
+}
+
+/* Secondary "always allow" button */
+.dcb-embed-load-always {
+    background: transparent;
+    color: var(--dcb-embed-tc, #fff);
+    border: 1px solid rgba(255,255,255,0.45);
+    font-size: 12px;
+    padding: 7px 16px;
+}
+.dcb-embed-load-always:hover { border-color: rgba(255,255,255,0.8); }
+
+/* Privacy link */
+.dcb-embed-privacy-link {
+    font-size: 11px;
+    color: var(--dcb-embed-tc, #fff);
+    opacity: 0.55;
+    text-decoration: underline;
+}
+.dcb-embed-privacy-link:hover { opacity: 0.9; }
+
+/* Loading state */
+.dcb-embed-loading .dcb-embed-placeholder {
+    opacity: 0.6;
+    pointer-events: none;
+}
+.dcb-embed-loading .dcb-embed-placeholder::after {
+    content: '';
+    display: block;
+    width: 28px; height: 28px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: dcb-spin 0.7s linear infinite;
+    position: absolute;
+    top: 50%; left: 50%;
+    margin: -14px 0 0 -14px;
+}
+@keyframes dcb-spin { to { transform: rotate(360deg); } }
+
+/* Iframe container (shown after load) */
+.dcb-embed-frame-container {
+    display: block;
+    max-width: 100%;
+}
+.dcb-embed-frame-container iframe {
+    display: block;
+    max-width: 100%;
+    border: 0;
+}
+
+/* Responsive helpers */
+@media (max-width: 600px) {
+    .dcb-embed-placeholder { padding: 24px 16px; min-height: 180px; }
+    .dcb-embed-icon { font-size: 32px; }
+    .dcb-embed-title { font-size: 15px; }
+    .dcb-embed-text { font-size: 12px; }
+}
+
+/* Consent-driven: when consent cookie is present, placeholder fades out */
+.dcb-embed-consented .dcb-embed-placeholder { display: none !important; }
+.dcb-embed-consented .dcb-embed-frame-container { display: block !important; }
+
+/* Dark-background overrides for light-bg embeds (maps etc.) */
+.dcb-embed-googlemaps .dcb-embed-load-once,
+.dcb-embed-openstreetmap .dcb-embed-load-once,
+.dcb-embed-instagram .dcb-embed-load-once,
+.dcb-embed-facebook .dcb-embed-load-once {
+    color: #fff;
+}
