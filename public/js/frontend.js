@@ -5,7 +5,11 @@
   const C   = DCBConfig;
   const cfg = C.settings;
 
-  // ─── CSS-Variablen setzen ─────────────────────────────────────────────────
+  // ─── i18n helper ─────────────────────────────────────────────────────────
+  const i18n = C.i18n || {};
+  function __(key, fallback) {
+    return i18n[key] || fallback || key;
+  }
   document.documentElement.style.setProperty('--dcb-primary', cfg.primary_color);
   document.documentElement.style.setProperty('--dcb-text',    cfg.text_color);
   document.documentElement.style.setProperty('--dcb-bg',      cfg.bg_color);
@@ -94,8 +98,8 @@
       '<button class="dcb-btn dcb-btn-text"      id="dcb-customize">'        + esc(cfg.customize)        + '</button>' +
       '</div>' +
       '<div class="dcb-links">' +
-      (C.privacy_url && C.privacy_url !== '#' ? '<a href="' + C.privacy_url + '">Datenschutz</a>' : '') +
-      (C.imprint_url && C.imprint_url !== '#' ? ' &middot; <a href="' + C.imprint_url + '">Impressum</a>' : '') +
+      (C.privacy_url && C.privacy_url !== '#' ? '<a href="' + C.privacy_url + '">' + esc(__('privacy_link','Datenschutz')) + '</a>' : '') +
+      (C.imprint_url && C.imprint_url !== '#' ? ' &middot; <a href="' + C.imprint_url + '">' + esc(__('imprint_link','Impressum')) + '</a>' : '') +
       '</div></div></div>';
 
     document.getElementById('dcb-accept-all').onclick       = function () { acceptAll(); };
@@ -156,7 +160,7 @@
         (isReq ? ' disabled checked' : (checked ? ' checked' : '')) + '>' +
         '<span class="dcb-slider"></span>' +
         '</label>' +
-        '<label>' + esc(cat.label) + (isReq ? ' <small>(Immer aktiv)</small>' : '') + '</label>' +
+        '<label>' + esc(cat.label) + (isReq ? ' <small>(' + esc(__('always_active','Immer aktiv')) + ')</small>' : '') + '</label>' +
         '</div>' +
         '<div class="dcb-category-desc">' + esc(cat.description) + '</div>' +
         '</div>';
@@ -173,8 +177,8 @@
       rows +
       '<div class="dcb-modal-btns">' +
       '<button class="dcb-btn dcb-btn-primary"   id="dcb-modal-save">'      + esc(cfg.save_settings) + '</button>' +
-      '<button class="dcb-btn dcb-btn-secondary" id="dcb-modal-all">Alle akzeptieren</button>' +
-      '<button class="dcb-btn dcb-btn-text"      id="dcb-modal-necessary">Nur notwendige</button>' +
+      '<button class="dcb-btn dcb-btn-secondary" id="dcb-modal-all">'       + esc(__('accept_all', 'Alle akzeptieren')) + '</button>' +
+      '<button class="dcb-btn dcb-btn-text"      id="dcb-modal-necessary">' + esc(__('necessary_only', 'Nur notwendige')) + '</button>' +
       '</div></div></div>';
 
     document.body.appendChild(overlay);

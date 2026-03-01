@@ -54,3 +54,21 @@
 
 /* ── Manual/auto status ── */
 #dcb-manual-status { font-weight:500; }
+
+/* ── Language Tab ── */
+.dcb-lang-box { background:#f9f9f9; border:1px solid #ddd; padding:24px; border-radius:6px; max-width:480px; }
+.dcb-lang-box h3 { margin-top:0; }
+.dcb-lang-cards { display:flex; gap:16px; margin:16px 0; flex-wrap:wrap; }
+.dcb-lang-card {
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  border:2px solid #ddd; border-radius:8px; padding:18px 28px;
+  cursor:pointer; transition:border-color .15s, background .15s;
+  background:#fff; min-width:110px;
+}
+.dcb-lang-card input[type="radio"] { display:none; }
+.dcb-lang-card:hover { border-color:#2271b1; background:#f0f6fc; }
+.dcb-lang-card.dcb-lang-active { border-color:#2271b1; background:#f0f6fc; }
+.dcb-lang-flag  { font-size:32px; line-height:1; }
+.dcb-lang-label { font-weight:600; font-size:15px; }
+.dcb-lang-current { font-size:11px; color:#2271b1; font-weight:600; }
+.dcb-tab-lang { background:#e8f0fb !important; }

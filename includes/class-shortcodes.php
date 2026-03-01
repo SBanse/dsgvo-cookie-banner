@@ -4,14 +4,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class DCB_Shortcodes {
 
     public function __construct() {
-        add_shortcode( 'dcb_cookie_list',   array( $this, 'cookie_list' ) );
-        add_shortcode( 'dcb_cookie_banner', array( $this, 'manual_banner' ) );
+        add_shortcode( 'dcb_cookie_list',      array( $this, 'cookie_list' ) );
+        add_shortcode( 'dcb_cookie_banner',    array( $this, 'manual_banner' ) );
         add_shortcode( 'dcb_privacy_settings', array( $this, 'privacy_settings_link' ) );
     }
 
-    /**
-     * [dcb_cookie_list] – Gibt die Cookie-Tabelle für Impressum/Datenschutz aus
-     */
     public function cookie_list( $atts ) {
         $atts = shortcode_atts( array(
             'category' => '',
@@ -24,25 +21,27 @@ class DCB_Shortcodes {
         $categories = $settings['categories'];
 
         if ( empty( $cookies ) ) {
-            return '<p>' . esc_html__( 'Keine Cookies erkannt. Bitte führen Sie einen Scan im WordPress-Backend durch.', 'dsgvo-cookie-banner' ) . '</p>';
+            return '<p>' . esc_html( DCB_I18n::t('no_cookies_found') ) . '</p>';
         }
 
-        // Nach Kategorie filtern
         if ( $atts['category'] ) {
-            $cookies = array_filter( $cookies, function( $c ) use ( $atts ) {
+            $cookies = array_filter( $cookies, function ( $c ) use ( $atts ) {
                 return $c['category'] === $atts['category'];
-            });
+            } );
         }
 
-        // Nach Kategorien gruppieren
         $grouped = array();
         foreach ( $cookies as $cookie ) {
             $grouped[ $cookie['category'] ][] = $cookie;
         }
 
         ob_start();
+
         if ( isset( $stored['last_scan'] ) ) {
-            echo '<p class="dcb-last-scan"><small>' . sprintf( esc_html__( 'Zuletzt gescannt: %s', 'dsgvo-cookie-banner' ), esc_html( $stored['last_scan'] ) ) . '</small></p>';
+            echo '<p class="dcb-last-scan"><small>'
+                . esc_html( DCB_I18n::t('last_scanned') ) . ' '
+                . esc_html( $stored['last_scan'] )
+                . '</small></p>';
         }
 
         foreach ( $grouped as $cat_key => $cat_cookies ) {
@@ -57,10 +56,10 @@ class DCB_Shortcodes {
                 <table class="dcb-cookie-table">
                     <thead>
                         <tr>
-                            <th><?php esc_html_e( 'Name', 'dsgvo-cookie-banner' ); ?></th>
-                            <th><?php esc_html_e( 'Anbieter', 'dsgvo-cookie-banner' ); ?></th>
-                            <th><?php esc_html_e( 'Zweck', 'dsgvo-cookie-banner' ); ?></th>
-                            <th><?php esc_html_e( 'Laufzeit', 'dsgvo-cookie-banner' ); ?></th>
+                            <th><?php echo esc_html( DCB_I18n::t('cookie_col_name') ); ?></th>
+                            <th><?php echo esc_html( DCB_I18n::t('cookie_col_provider') ); ?></th>
+                            <th><?php echo esc_html( DCB_I18n::t('cookie_col_purpose') ); ?></th>
+                            <th><?php echo esc_html( DCB_I18n::t('cookie_col_duration') ); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -81,15 +80,16 @@ class DCB_Shortcodes {
         return ob_get_clean();
     }
 
-    /**
-     * [dcb_privacy_settings] – Link zum Öffnen der Cookie-Einstellungen
-     */
     public function privacy_settings_link( $atts ) {
-        $atts = shortcode_atts( array( 'text' => 'Cookie-Einstellungen ändern' ), $atts );
-        return '<button type="button" class="dcb-reopen-banner" onclick="DCB.openBanner()">' . esc_html( $atts['text'] ) . '</button>';
+        $atts = shortcode_atts( array(
+            'text' => DCB_I18n::t('change_settings_btn'),
+        ), $atts );
+        return '<button type="button" class="dcb-reopen-banner" onclick="DCB.openSettings()">'
+            . esc_html( $atts['text'] ) . '</button>';
     }
 
     public function manual_banner( $atts ) {
-        return '<button type="button" class="dcb-open-btn" onclick="DCB.openBanner()">' . esc_html__( 'Cookie-Einstellungen', 'dsgvo-cookie-banner' ) . '</button>';
+        return '<button type="button" class="dcb-open-btn" onclick="DCB.openBanner()">'
+            . esc_html( DCB_I18n::t('open_settings_btn') ) . '</button>';
     }
 }

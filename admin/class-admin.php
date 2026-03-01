@@ -15,17 +15,17 @@ class DCB_Admin {
 
     public function add_menu() {
         add_menu_page(
-            'DSGVO Cookie Banner',
-            'Cookie Banner',
+            DCB_I18n::t('admin_page_title'),
+            DCB_I18n::t('admin_menu_label'),
             'manage_options',
             'dcb-settings',
             array( $this, 'render_settings_page' ),
             'dashicons-privacy',
             85
         );
-        add_submenu_page( 'dcb-settings', 'Einstellungen', 'Einstellungen', 'manage_options', 'dcb-settings', array( $this, 'render_settings_page' ) );
-        add_submenu_page( 'dcb-settings', 'Cookie-Scanner', 'Cookie-Scanner', 'manage_options', 'dcb-scanner', array( $this, 'render_scanner_page' ) );
-        add_submenu_page( 'dcb-settings', 'Einwilligungen', 'Einwilligungen', 'manage_options', 'dcb-consents', array( $this, 'render_consents_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_settings'), DCB_I18n::t('admin_submenu_settings'), 'manage_options', 'dcb-settings',  array( $this, 'render_settings_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_scanner'),  DCB_I18n::t('admin_submenu_scanner'),  'manage_options', 'dcb-scanner',   array( $this, 'render_scanner_page' ) );
+        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents',  array( $this, 'render_consents_page' ) );
     }
 
     public function register_settings() {
@@ -36,6 +36,13 @@ class DCB_Admin {
 
     public function sanitize_settings( $input ) {
         $clean = array();
+
+        // Language (must be processed first so category labels can be updated)
+        $allowed_langs = array_keys( DCB_I18n::available_languages() );
+        $clean['plugin_language'] = in_array( $input['plugin_language'] ?? '', $allowed_langs, true )
+            ? $input['plugin_language']
+            : 'de';
+
         $text_fields = array( 'banner_title', 'banner_text', 'accept_all_text', 'accept_necessary_text', 'customize_text', 'save_settings_text', 'banner_position', 'banner_layout' );
         foreach ( $text_fields as $f ) {
             $clean[ $f ] = sanitize_text_field( $input[ $f ] ?? '' );
@@ -48,7 +55,31 @@ class DCB_Admin {
         $clean['imprint_page_id']= absint( $input['imprint_page_id'] ?? 0 );
         $clean['auto_block_scripts'] = ! empty( $input['auto_block_scripts'] );
         $clean['log_consents']   = ! empty( $input['log_consents'] );
-        $clean['categories']     = DCB_Cookie_Manager::default_categories(); // keep default structure
+
+        // When language changes, update the category labels/descriptions to match
+        // but keep the required flag unchanged
+        $prev       = DCB_Cookie_Manager::get_settings();
+        $prev_lang  = $prev['plugin_language'] ?? 'de';
+        $new_lang   = $clean['plugin_language'];
+
+        if ( $prev_lang !== $new_lang ) {
+            // Language switched: rebuild categories in new language
+            $clean['categories'] = DCB_Cookie_Manager::default_categories( $new_lang );
+
+            // Also reset banner texts to new language defaults if they still match
+            // the OLD language defaults (i.e. user hasn't customised them)
+            $old_defaults = DCB_Cookie_Manager::default_settings_for_lang( $prev_lang );
+            $new_defaults = DCB_Cookie_Manager::default_settings_for_lang( $new_lang );
+
+            foreach ( array( 'banner_title', 'banner_text', 'accept_all_text', 'accept_necessary_text', 'customize_text', 'save_settings_text' ) as $f ) {
+                if ( $clean[ $f ] === $old_defaults[ $f ] || $clean[ $f ] === $prev[ $f ] ) {
+                    $clean[ $f ] = $new_defaults[ $f ];
+                }
+            }
+        } else {
+            $clean['categories'] = DCB_Cookie_Manager::default_categories( $new_lang );
+        }
+
         return $clean;
     }
 
@@ -59,6 +90,7 @@ class DCB_Admin {
         wp_localize_script( 'dcb-admin', 'DCBAdmin', array(
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'dcb_admin_nonce' ),
+            'i18n'     => DCB_I18n::all(),
         ) );
     }
 

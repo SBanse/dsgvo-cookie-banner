@@ -4,26 +4,27 @@ $manual   = $stored['manual'] ?? array();
 $all      = array_merge( $auto, $manual );
 $settings = DCB_Cookie_Manager::get_settings();
 $cats     = $settings['categories'];
+$i        = 'DCB_I18n';
 ?>
 <div class="wrap dcb-admin-wrap">
-    <h1>🔍 Cookie-Verwaltung</h1>
-    <p>Scannt Ihre WordPress-Installation auf verwendete Cookies. Alle Felder können direkt in der Tabelle bearbeitet werden – klicken Sie dazu auf den ✏️-Button in der jeweiligen Zeile.</p>
+    <h1><?php echo esc_html( $i::t('admin_scanner_title') ); ?></h1>
+    <p><?php echo esc_html( $i::t('scanner_intro') ); ?></p>
 
     <div class="dcb-scan-box">
-        <button id="dcb-run-scan" class="button button-primary button-hero">🔍 Scan starten</button>
+        <button id="dcb-run-scan" class="button button-primary button-hero"><?php echo esc_html( $i::t('scan_start_btn') ); ?></button>
         <span id="dcb-scan-status"></span>
         <?php if ( isset( $stored['last_scan'] ) ) : ?>
-            <small style="display:block;margin-top:6px;color:#666">Letzter Scan: <?php echo esc_html( $stored['last_scan'] ); ?></small>
+            <small style="display:block;margin-top:6px;color:#666"><?php echo esc_html( $i::t('last_scan') ); ?> <?php echo esc_html( $stored['last_scan'] ); ?></small>
         <?php endif; ?>
     </div>
 
     <div class="dcb-table-header">
-        <h2 style="margin:0">Cookie-Liste (<?php echo count( $all ); ?> Einträge)</h2>
-        <button id="dcb-add-row-btn" class="button button-secondary">+ Cookie hinzufügen</button>
+        <h2 style="margin:0"><?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)</h2>
+        <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
     </div>
 
     <?php if ( empty( $all ) ) : ?>
-        <p class="dcb-empty-notice">Noch keine Cookies vorhanden. Starten Sie einen Scan oder fügen Sie Cookies manuell hinzu.</p>
+        <p class="dcb-empty-notice"><?php echo esc_html( $i::t('no_cookies_yet') ); ?></p>
     <?php else :
         $grouped = array();
         foreach ( $all as $k => $c ) {
@@ -52,13 +53,13 @@ $cats     = $settings['categories'];
         <table class="widefat dcb-cookie-edit-table">
             <thead>
                 <tr>
-                    <th style="width:17%">Cookie-Name</th>
-                    <th style="width:14%">Anbieter</th>
-                    <th style="width:31%">Zweck / Beschreibung</th>
-                    <th style="width:10%">Laufzeit</th>
-                    <th style="width:12%">Kategorie</th>
-                    <th style="width:7%">Quelle</th>
-                    <th style="width:9%">Aktionen</th>
+                    <th style="width:17%"><?php echo esc_html( $i::t('col_cookie_name') ); ?></th>
+                    <th style="width:14%"><?php echo esc_html( $i::t('col_provider') ); ?></th>
+                    <th style="width:31%"><?php echo esc_html( $i::t('col_purpose') ); ?></th>
+                    <th style="width:10%"><?php echo esc_html( $i::t('col_duration') ); ?></th>
+                    <th style="width:12%"><?php echo esc_html( $i::t('col_category') ); ?></th>
+                    <th style="width:7%"><?php echo esc_html( $i::t('col_source') ); ?></th>
+                    <th style="width:9%"><?php echo esc_html( $i::t('col_actions') ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -75,23 +76,26 @@ $cats     = $settings['categories'];
                             <?php echo esc_html( $cats[ $c['category'] ?? '' ]['label'] ?? ucfirst( $c['category'] ?? '' ) ); ?>
                         </span>
                     </td>
-                    <td class="dcb-view"><?php echo $is_manual ? '<span title="Manuell / bearbeitet">✏️</span>' : '<span title="Automatisch erkannt">🤖</span>'; ?></td>
+                    <td class="dcb-view"><?php echo $is_manual
+                        ? '<span title="' . esc_attr( $i::t('source_manual') ) . '">✏️</span>'
+                        : '<span title="' . esc_attr( $i::t('source_auto') )   . '">🤖</span>'; ?>
+                    </td>
                     <td class="dcb-view dcb-row-actions">
-                        <button class="button button-small dcb-edit-btn">✏️ Bearbeiten</button>
-                        <button class="button button-small dcb-delete-cookie" data-key="<?php echo esc_attr( $k ); ?>">🗑️</button>
+                        <button class="button button-small dcb-edit-btn"><?php echo esc_html( $i::t('btn_edit') ); ?></button>
+                        <button class="button button-small dcb-delete-cookie" data-key="<?php echo esc_attr( $k ); ?>"><?php echo esc_html( $i::t('btn_delete') ); ?></button>
                     </td>
 
                     <td class="dcb-edit" style="display:none">
-                        <input type="text" class="dcb-in-name regular-text" value="<?php echo esc_attr( $c['name'] ); ?>" placeholder="Cookie-Name">
+                        <input type="text" class="dcb-in-name regular-text" value="<?php echo esc_attr( $c['name'] ); ?>" placeholder="<?php echo esc_attr( $i::t('field_cookie_name_ph') ); ?>">
                     </td>
                     <td class="dcb-edit" style="display:none">
-                        <input type="text" class="dcb-in-provider regular-text" value="<?php echo esc_attr( $c['provider'] ); ?>" placeholder="Anbieter">
+                        <input type="text" class="dcb-in-provider regular-text" value="<?php echo esc_attr( $c['provider'] ); ?>" placeholder="<?php echo esc_attr( $i::t('field_provider_ph') ); ?>">
                     </td>
                     <td class="dcb-edit" style="display:none">
-                        <textarea class="dcb-in-purpose large-text" rows="2" placeholder="Zweck"><?php echo esc_textarea( $c['purpose'] ); ?></textarea>
+                        <textarea class="dcb-in-purpose large-text" rows="2" placeholder="<?php echo esc_attr( $i::t('field_purpose_ph') ); ?>"><?php echo esc_textarea( $c['purpose'] ); ?></textarea>
                     </td>
                     <td class="dcb-edit" style="display:none">
-                        <input type="text" class="dcb-in-duration" value="<?php echo esc_attr( $c['duration'] ); ?>" placeholder="Laufzeit" style="width:90px">
+                        <input type="text" class="dcb-in-duration" value="<?php echo esc_attr( $c['duration'] ); ?>" placeholder="<?php echo esc_attr( $i::t('field_duration_ph') ); ?>" style="width:90px">
                     </td>
                     <td class="dcb-edit" style="display:none">
                         <select class="dcb-in-category">
@@ -102,8 +106,8 @@ $cats     = $settings['categories'];
                     </td>
                     <td class="dcb-edit" style="display:none"></td>
                     <td class="dcb-edit" style="display:none">
-                        <button class="button button-primary button-small dcb-save-btn">💾 Speichern</button><br><br>
-                        <button class="button button-small dcb-cancel-btn">Abbrechen</button>
+                        <button class="button button-primary button-small dcb-save-btn"><?php echo esc_html( $i::t('btn_save') ); ?></button><br><br>
+                        <button class="button button-small dcb-cancel-btn"><?php echo esc_html( $i::t('btn_cancel') ); ?></button>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -112,32 +116,39 @@ $cats     = $settings['categories'];
     </div>
     <?php endforeach; endif; ?>
 
-    <!-- Neuen Cookie hinzufügen -->
+    <!-- Add new cookie -->
     <div id="dcb-add-row-form" style="display:none">
-        <h2>Neuen Cookie hinzufügen</h2>
+        <h2><?php echo esc_html( $i::t('add_cookie_title') ); ?></h2>
         <div class="dcb-manual-form">
             <table class="form-table">
-                <tr><th>Cookie-Name *</th><td><input type="text" id="mc-name" class="regular-text" placeholder="z.B. _my_cookie"><p class="description">Exakter Name des Cookies im Browser.</p></td></tr>
-                <tr><th>Kategorie *</th><td>
-                    <select id="mc-category">
-                        <?php foreach ( $cats as $k => $c ) : ?>
-                            <option value="<?php echo esc_attr($k); ?>"><?php echo esc_html($c['label']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </td></tr>
-                <tr><th>Anbieter</th><td><input type="text" id="mc-provider" class="regular-text" placeholder="z.B. Google LLC"></td></tr>
-                <tr><th>Zweck / Beschreibung</th><td><textarea id="mc-purpose" rows="3" class="large-text" placeholder="Wofür wird dieser Cookie verwendet?"></textarea></td></tr>
-                <tr><th>Laufzeit</th><td><input type="text" id="mc-duration" class="regular-text" placeholder="z.B. 1 Jahr, Session, 30 Tage"></td></tr>
+                <tr>
+                    <th><?php echo esc_html( $i::t('field_cookie_name') ); ?></th>
+                    <td><input type="text" id="mc-name" class="regular-text" placeholder="<?php echo esc_attr( $i::t('field_cookie_name_ph') ); ?>">
+                    <p class="description"><?php echo esc_html( $i::t('field_cookie_name_desc') ); ?></p></td>
+                </tr>
+                <tr>
+                    <th><?php echo esc_html( $i::t('field_category') ); ?></th>
+                    <td>
+                        <select id="mc-category">
+                            <?php foreach ( $cats as $k => $c ) : ?>
+                                <option value="<?php echo esc_attr($k); ?>"><?php echo esc_html($c['label']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                </tr>
+                <tr><th><?php echo esc_html( $i::t('field_provider') ); ?></th><td><input type="text" id="mc-provider" class="regular-text" placeholder="<?php echo esc_attr( $i::t('field_provider_ph') ); ?>"></td></tr>
+                <tr><th><?php echo esc_html( $i::t('field_purpose') ); ?></th><td><textarea id="mc-purpose" rows="3" class="large-text" placeholder="<?php echo esc_attr( $i::t('field_purpose_ph') ); ?>"></textarea></td></tr>
+                <tr><th><?php echo esc_html( $i::t('field_duration') ); ?></th><td><input type="text" id="mc-duration" class="regular-text" placeholder="<?php echo esc_attr( $i::t('field_duration_ph') ); ?>"></td></tr>
             </table>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <button id="dcb-add-manual" class="button button-primary">✅ Cookie speichern</button>
-                <button id="dcb-cancel-add" class="button">Abbrechen</button>
+                <button id="dcb-add-manual" class="button button-primary"><?php echo esc_html( $i::t('btn_save_cookie') ); ?></button>
+                <button id="dcb-cancel-add" class="button"><?php echo esc_html( $i::t('btn_cancel') ); ?></button>
                 <span id="dcb-manual-status" style="color:green;font-weight:500"></span>
             </div>
         </div>
     </div>
 
     <div class="dcb-shortcode-hint">
-        <strong>💡 Shortcode:</strong> Fügen Sie <code>[dcb_cookie_list]</code> in Ihre Datenschutzerklärung ein, um diese Liste automatisch anzuzeigen.
+        <?php echo esc_html( $i::t('shortcode_hint') ); ?>
     </div>
 </div>

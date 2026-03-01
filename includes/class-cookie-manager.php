@@ -35,20 +35,48 @@ class DCB_Cookie_Manager {
     }
 
     public static function default_settings() {
+        // Detect locale for initial language default
+        $locale   = get_locale();
+        $lang     = str_starts_with( $locale, 'de' ) ? 'de' : 'en';
+
+        // Translated defaults – i18n may not be initialised yet at activation,
+        // so we inline a tiny lookup here.
+        $titles = array(
+            'de' => array(
+                'banner_title'          => 'Wir verwenden Cookies',
+                'banner_text'           => 'Wir verwenden Cookies und ähnliche Technologien, um unsere Website zu verbessern und Ihnen die bestmögliche Erfahrung zu bieten. Bitte wählen Sie, welche Cookies Sie akzeptieren möchten.',
+                'accept_all_text'       => 'Alle akzeptieren',
+                'accept_necessary_text' => 'Nur notwendige',
+                'customize_text'        => 'Einstellungen',
+                'save_settings_text'    => 'Einstellungen speichern',
+            ),
+            'en' => array(
+                'banner_title'          => 'We use cookies',
+                'banner_text'           => 'We use cookies and similar technologies to improve our website and provide you with the best possible experience. Please choose which cookies you would like to accept.',
+                'accept_all_text'       => 'Accept all',
+                'accept_necessary_text' => 'Necessary only',
+                'customize_text'        => 'Settings',
+                'save_settings_text'    => 'Save settings',
+            ),
+        );
+
+        $t = $titles[ $lang ];
+
         return array(
-            'banner_title'         => 'Wir verwenden Cookies',
-            'banner_text'          => 'Wir verwenden Cookies und ähnliche Technologien, um unsere Website zu verbessern und Ihnen die bestmögliche Erfahrung zu bieten. Bitte wählen Sie, welche Cookies Sie akzeptieren möchten.',
-            'accept_all_text'      => 'Alle akzeptieren',
-            'accept_necessary_text'=> 'Nur notwendige',
-            'customize_text'       => 'Einstellungen',
-            'save_settings_text'   => 'Einstellungen speichern',
+            'plugin_language'      => $lang,
+            'banner_title'         => $t['banner_title'],
+            'banner_text'          => $t['banner_text'],
+            'accept_all_text'      => $t['accept_all_text'],
+            'accept_necessary_text'=> $t['accept_necessary_text'],
+            'customize_text'       => $t['customize_text'],
+            'save_settings_text'   => $t['save_settings_text'],
             'banner_position'      => 'bottom',
             'banner_layout'        => 'bar',
             'primary_color'        => '#0073aa',
             'text_color'           => '#333333',
             'bg_color'             => '#ffffff',
             'cookie_lifetime'      => 365,
-            'categories'           => self::default_categories(),
+            'categories'           => self::default_categories( $lang ),
             'privacy_page_id'      => 0,
             'imprint_page_id'      => 0,
             'auto_block_scripts'   => true,
@@ -56,29 +84,34 @@ class DCB_Cookie_Manager {
         );
     }
 
-    public static function default_categories() {
-        return array(
-            'necessary' => array(
-                'label'       => 'Notwendig',
-                'description' => 'Diese Cookies sind für den Betrieb der Website unbedingt erforderlich und können nicht deaktiviert werden.',
-                'required'    => true,
+    /**
+     * Returns default categories translated for the given language.
+     * Falls back to DE if i18n not yet loaded.
+     */
+    public static function default_categories( string $lang = '' ): array {
+        // If i18n is already loaded, use it; otherwise inline strings
+        if ( class_exists( 'DCB_I18n' ) && DCB_I18n::get_lang() ) {
+            $l = $lang ?: DCB_I18n::get_lang();
+        } else {
+            $l = $lang ?: 'de';
+        }
+
+        $cats = array(
+            'de' => array(
+                'necessary'   => array( 'label' => 'Notwendig',   'description' => 'Diese Cookies sind für den Betrieb der Website unbedingt erforderlich und können nicht deaktiviert werden.', 'required' => true ),
+                'statistics'  => array( 'label' => 'Statistik',   'description' => 'Diese Cookies helfen uns zu verstehen, wie Besucher mit der Website interagieren (z. B. Google Analytics).', 'required' => false ),
+                'marketing'   => array( 'label' => 'Marketing',   'description' => 'Diese Cookies werden verwendet, um Werbeanzeigen relevanter für Sie zu gestalten.', 'required' => false ),
+                'preferences' => array( 'label' => 'Präferenzen', 'description' => 'Diese Cookies ermöglichen der Website, Informationen zu speichern, die Ihr Verhalten oder Ihr Aussehen beeinflussen.', 'required' => false ),
             ),
-            'statistics' => array(
-                'label'       => 'Statistik',
-                'description' => 'Diese Cookies helfen uns zu verstehen, wie Besucher mit der Website interagieren (z. B. Google Analytics).',
-                'required'    => false,
-            ),
-            'marketing' => array(
-                'label'       => 'Marketing',
-                'description' => 'Diese Cookies werden verwendet, um Werbeanzeigen relevanter für Sie zu gestalten.',
-                'required'    => false,
-            ),
-            'preferences' => array(
-                'label'       => 'Präferenzen',
-                'description' => 'Diese Cookies ermöglichen der Website, Informationen zu speichern, die Ihr Verhalten oder Ihr Aussehen beeinflussen.',
-                'required'    => false,
+            'en' => array(
+                'necessary'   => array( 'label' => 'Necessary',   'description' => 'These cookies are strictly required for the operation of the website and cannot be disabled.', 'required' => true ),
+                'statistics'  => array( 'label' => 'Statistics',  'description' => 'These cookies help us understand how visitors interact with our website (e.g. Google Analytics).', 'required' => false ),
+                'marketing'   => array( 'label' => 'Marketing',   'description' => 'These cookies are used to make advertisements more relevant to you.', 'required' => false ),
+                'preferences' => array( 'label' => 'Preferences', 'description' => 'These cookies allow the website to remember information that changes how the site behaves or looks.', 'required' => false ),
             ),
         );
+
+        return $cats[ $l ] ?? $cats['de'];
     }
 
     public static function get_settings() {
@@ -88,6 +121,32 @@ class DCB_Cookie_Manager {
 
     public static function get_detected_cookies() {
         return get_option( self::OPTION_COOKIES, array() );
+    }
+
+    /**
+     * Returns just the translatable text defaults for a specific language
+     * (used when detecting whether the user customised the texts).
+     */
+    public static function default_settings_for_lang( string $lang ): array {
+        $map = array(
+            'de' => array(
+                'banner_title'          => 'Wir verwenden Cookies',
+                'banner_text'           => 'Wir verwenden Cookies und ähnliche Technologien, um unsere Website zu verbessern und Ihnen die bestmögliche Erfahrung zu bieten. Bitte wählen Sie, welche Cookies Sie akzeptieren möchten.',
+                'accept_all_text'       => 'Alle akzeptieren',
+                'accept_necessary_text' => 'Nur notwendige',
+                'customize_text'        => 'Einstellungen',
+                'save_settings_text'    => 'Einstellungen speichern',
+            ),
+            'en' => array(
+                'banner_title'          => 'We use cookies',
+                'banner_text'           => 'We use cookies and similar technologies to improve our website and provide you with the best possible experience. Please choose which cookies you would like to accept.',
+                'accept_all_text'       => 'Accept all',
+                'accept_necessary_text' => 'Necessary only',
+                'customize_text'        => 'Settings',
+                'save_settings_text'    => 'Save settings',
+            ),
+        );
+        return $map[ $lang ] ?? $map['de'];
     }
 
     public static function save_detected_cookies( $cookies ) {
