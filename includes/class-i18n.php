@@ -39,7 +39,7 @@ class DCB_I18n {
         } else {
             // WordPress-Locale als Fallback
             $locale = get_locale();
-            self::$lang = str_starts_with( $locale, 'de' ) ? 'de' : 'en';
+            self::$lang = strpos( $locale, 'de' ) === 0 ? 'de' : 'en';
         }
 
         self::$strings = self::load( self::$lang );

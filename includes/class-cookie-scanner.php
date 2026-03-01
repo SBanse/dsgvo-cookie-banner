@@ -114,31 +114,35 @@ class DCB_Cookie_Scanner {
         }
 
         // ── 3. Theme functions.php scannen ───────────────────────────────────
-        $theme_file = get_stylesheet_directory() . '/functions.php';
-        if ( file_exists( $theme_file ) ) {
-            $content = @file_get_contents( $theme_file );
-            if ( $content !== false ) {
-                $keyword_map = array(
-                    'google-analytics'  => array( '_ga', '_gid', '_gat' ),
-                    'gtag('             => array( '_ga', '_gid', '_gat' ),
-                    'GoogleAnalytics'   => array( '_ga', '_gid', '_gat' ),
-                    'fbq('              => array( '_fbp', 'fr' ),
-                    'facebook-pixel'    => array( '_fbp', 'fr' ),
-                    'hotjar'            => array( '_hj' ),
-                    'youtube.com/embed' => array( 'YSC', 'VISITOR_INFO1_LIVE' ),
-                    'stripe.js'         => array( '__stripe_mid', '__stripe_sid' ),
-                    'stripe.com/v3'     => array( '__stripe_mid', '__stripe_sid' ),
-                    'linkedin'          => array( 'li_gc', 'lidc' ),
-                    'twitter'           => array( '_twitter_sess', 'guest_id' ),
-                );
-                foreach ( $keyword_map as $keyword => $cookie_keys ) {
-                    if ( stripos( $content, $keyword ) !== false ) {
-                        foreach ( $cookie_keys as $ck ) {
-                            $add( $ck );
+        try {
+            $theme_file = get_stylesheet_directory() . '/functions.php';
+            if ( file_exists( $theme_file ) && is_readable( $theme_file ) ) {
+                $content = file_get_contents( $theme_file );
+                if ( $content !== false ) {
+                    $keyword_map = array(
+                        'google-analytics'  => array( '_ga', '_gid', '_gat' ),
+                        'gtag('             => array( '_ga', '_gid', '_gat' ),
+                        'GoogleAnalytics'   => array( '_ga', '_gid', '_gat' ),
+                        'fbq('              => array( '_fbp', 'fr' ),
+                        'facebook-pixel'    => array( '_fbp', 'fr' ),
+                        'hotjar'            => array( '_hj' ),
+                        'youtube.com/embed' => array( 'YSC', 'VISITOR_INFO1_LIVE' ),
+                        'stripe.js'         => array( '__stripe_mid', '__stripe_sid' ),
+                        'stripe.com/v3'     => array( '__stripe_mid', '__stripe_sid' ),
+                        'linkedin'          => array( 'li_gc', 'lidc' ),
+                        'twitter'           => array( '_twitter_sess', 'guest_id' ),
+                    );
+                    foreach ( $keyword_map as $keyword => $cookie_keys ) {
+                        if ( stripos( $content, $keyword ) !== false ) {
+                            foreach ( $cookie_keys as $ck ) {
+                                $add( $ck );
+                            }
                         }
                     }
                 }
             }
+        } catch ( \Throwable $e ) {
+            // Theme-Datei konnte nicht gelesen werden – ignorieren und weitermachen
         }
 
         // ── 4. Zusammenführen ────────────────────────────────────────────────

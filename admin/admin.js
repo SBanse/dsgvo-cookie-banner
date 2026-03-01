@@ -16,18 +16,58 @@ jQuery(function ($) {
         var $btn = $(this);
         $('#dcb-scan-status').text(__('scan_running'));
         $btn.prop('disabled', true);
-        $.post(DCBAdmin.ajax_url, { action: 'dcb_scan', nonce: DCBAdmin.nonce }, function (res) {
-            if (res.success) {
-                var msg = __('scan_done').replace('%d', res.data.count);
-                $('#dcb-scan-status').text(msg);
-                setTimeout(function () { location.reload(); }, 1200);
-            } else {
-                $('#dcb-scan-status').text(__('scan_error'));
+
+        $.ajax({
+            url:  DCBAdmin.ajax_url,
+            type: 'POST',
+            data: { action: 'dcb_scan', nonce: DCBAdmin.nonce },
+            success: function (raw) {
+                var res;
+                try { res = (typeof raw === 'object') ? raw : JSON.parse(raw); }
+                catch(e) {
+                    // Manchmal steht PHP-Output vor dem JSON – JSON-Teil extrahieren
+                    var jsonStart = typeof raw === 'string' ? raw.indexOf('{"') : -1;
+                    if (jsonStart > 0) {
+                        try { res = JSON.parse(raw.substring(jsonStart)); } catch(e2) {}
+                    }
+                    if (!res) {
+                        $('#dcb-scan-status').css('color','red').text('❌ Ungültige Server-Antwort');
+                        console.error('[DCB Scan] Keine JSON-Antwort:', typeof raw === 'string' ? raw.substring(0,300) : raw);
+                        $btn.prop('disabled', false); return;
+                    }
+                }
+                if (res && res.success) {
+                    var msg = __('scan_done').replace('%d', res.data.count);
+                    $('#dcb-scan-status').css('color','green').text(msg);
+                    setTimeout(function () { location.reload(); }, 1200);
+                } else {
+                    var errMsg = (res && res.data && res.data.message) ? res.data.message : __('scan_error');
+                    $('#dcb-scan-status').css('color','red').text('❌ ' + errMsg);
+                    console.error('[DCB Scan] Server-Fehler:', res);
+                    $btn.prop('disabled', false);
+                }
+            },
+            error: function (xhr, status, err) {
+                // Prüfen ob trotz Fehler-Status valides JSON in der Antwort steckt
+                var raw = xhr.responseText || '';
+                var res = null;
+                var jsonStart = raw.indexOf('{"');
+                if (jsonStart >= 0) {
+                    try { res = JSON.parse(raw.substring(jsonStart)); } catch(e) {}
+                }
+                if (res && res.success) {
+                    // Scan hat funktioniert – der "Fehler" war nur schmutziger Output davor
+                    var msg = __('scan_done').replace('%d', res.data.count);
+                    $('#dcb-scan-status').css('color','green').text(msg);
+                    setTimeout(function () { location.reload(); }, 1200);
+                    return;
+                }
+                var errMsg = res && res.data && res.data.message ? res.data.message : ('Verbindungsfehler (' + status + ')');
+                $('#dcb-scan-status').css('color','red').text('❌ ' + errMsg);
+                console.error('[DCB Scan] AJAX-Fehler:', status, err);
+                console.error('[DCB Scan] Server-Antwort:', raw.substring(0, 300));
                 $btn.prop('disabled', false);
             }
-        }).fail(function () {
-            $('#dcb-scan-status').text(__('scan_connection_error'));
-            $btn.prop('disabled', false);
         });
     });
 
@@ -191,34 +231,26 @@ jQuery(function ($) {
             .replace(/&/g, '&amp;').replace(/</g, '&lt;')
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-});
 
     /* ── Category key live preview ── */
-    // Shortcode key input → update preview span
     $(document).on('input', '.dcb-cat-key-group input[name*="[shortcode_key]"]', function () {
         var val = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase() || '…';
         $(this).closest('.dcb-cat-key-group').find('.dcb-key-preview-sc').text(val);
     });
 
-    // Block key input → update preview span
     $(document).on('input', '.dcb-cat-key-group input[name*="[block_key]"]', function () {
         var val = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase() || '…';
         $(this).closest('.dcb-cat-key-group').find('.dcb-key-preview-bk').text(val);
     });
 
-    // Also sanitise on blur: strip invalid chars, lowercase
     $(document).on('blur', '.dcb-key-input:not([readonly])', function () {
         var clean = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase();
-        if (!clean) {
-            // restore original (data attribute set below on page load)
-            clean = $(this).data('original') || '';
-        }
+        if (!clean) { clean = $(this).data('original') || ''; }
         $(this).val(clean);
     });
 
-    // Store original value for reset-on-empty
     $(document).on('focus', '.dcb-key-input:not([readonly])', function () {
-        if (!$(this).data('original')) {
-            $(this).data('original', $(this).val());
-        }
+        if (!$(this).data('original')) { $(this).data('original', $(this).val()); }
     });
+
+});
