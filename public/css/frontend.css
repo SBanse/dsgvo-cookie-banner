@@ -115,3 +115,7 @@
   #dcb-modal { padding: 20px 16px; }
   #dcb-banner.dcb-layout-bar .dcb-banner-inner { padding: 14px 16px; }
 }
+
+/* dcb_cookie_list block hint */
+.dcb-block-hint { margin-top: 6px; font-size: 12px; color: #888; }
+.dcb-block-hint code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; }

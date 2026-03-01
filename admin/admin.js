@@ -192,3 +192,33 @@ jQuery(function ($) {
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 });
+
+    /* ── Category key live preview ── */
+    // Shortcode key input → update preview span
+    $(document).on('input', '.dcb-cat-key-group input[name*="[shortcode_key]"]', function () {
+        var val = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase() || '…';
+        $(this).closest('.dcb-cat-key-group').find('.dcb-key-preview-sc').text(val);
+    });
+
+    // Block key input → update preview span
+    $(document).on('input', '.dcb-cat-key-group input[name*="[block_key]"]', function () {
+        var val = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase() || '…';
+        $(this).closest('.dcb-cat-key-group').find('.dcb-key-preview-bk').text(val);
+    });
+
+    // Also sanitise on blur: strip invalid chars, lowercase
+    $(document).on('blur', '.dcb-key-input:not([readonly])', function () {
+        var clean = $(this).val().replace(/[^a-z0-9_-]/gi, '').toLowerCase();
+        if (!clean) {
+            // restore original (data attribute set below on page load)
+            clean = $(this).data('original') || '';
+        }
+        $(this).val(clean);
+    });
+
+    // Store original value for reset-on-empty
+    $(document).on('focus', '.dcb-key-input:not([readonly])', function () {
+        if (!$(this).data('original')) {
+            $(this).data('original', $(this).val());
+        }
+    });

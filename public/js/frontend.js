@@ -59,10 +59,24 @@
   }
 
   // ─── Script-Freigabe ──────────────────────────────────────────────────────
+  // Build lookup: block_key -> internal_key (from categories config)
+  function buildBlockKeyMap() {
+    const map = {};
+    const cats = cfg.categories || {};
+    Object.entries(cats).forEach(function([internalKey, cat]) {
+      const bk = cat.block_key || internalKey;
+      map[bk]          = internalKey; // block_key → internal
+      map[internalKey] = internalKey; // also accept internal key directly (backwards compat)
+    });
+    return map;
+  }
+
   function applyConsent(consent) {
+    const blockMap = buildBlockKeyMap();
     document.querySelectorAll('script[type="text/plain"][data-dcb-category]').forEach(el => {
-      const cat = el.dataset.dcbCategory;
-      if (consent.categories[cat]) {
+      const rawKey     = el.dataset.dcbCategory;
+      const internalKey = blockMap[rawKey] || rawKey; // resolve block_key → internal
+      if (consent.categories[internalKey]) {
         const s = document.createElement('script');
         [...el.attributes].forEach(a => { if (a.name !== 'type') s.setAttribute(a.name, a.value); });
         s.removeAttribute('type');

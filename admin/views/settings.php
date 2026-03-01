@@ -11,6 +11,7 @@ $i    = 'DCB_I18n'; // shorthand
         <div class="dcb-tabs">
             <button type="button" class="dcb-tab active" data-tab="banner"><?php echo esc_html( $i::t('tab_banner') ); ?></button>
             <button type="button" class="dcb-tab" data-tab="design"><?php echo esc_html( $i::t('tab_design') ); ?></button>
+            <button type="button" class="dcb-tab" data-tab="categories">🗂️ <?php echo esc_html( $i::t('tab_categories') ); ?></button>
             <button type="button" class="dcb-tab" data-tab="advanced"><?php echo esc_html( $i::t('tab_advanced') ); ?></button>
             <button type="button" class="dcb-tab dcb-tab-lang" data-tab="language">🌐 <?php echo esc_html( $i::t('tab_language') ); ?></button>
             <button type="button" class="dcb-tab" data-tab="help"><?php echo esc_html( $i::t('tab_help') ); ?></button>
@@ -54,6 +55,77 @@ $i    = 'DCB_I18n'; // shorthand
                 <tr><th><?php echo esc_html( $i::t('field_text_color') ); ?></th><td><input type="color" name="<?php echo $S; ?>[text_color]" value="<?php echo esc_attr( $settings['text_color'] ); ?>"></td></tr>
                 <tr><th><?php echo esc_html( $i::t('field_bg_color') ); ?></th><td><input type="color" name="<?php echo $S; ?>[bg_color]" value="<?php echo esc_attr( $settings['bg_color'] ); ?>"></td></tr>
             </table>
+        </div>
+
+        <!-- Categories -->
+        <div class="dcb-tab-content" id="tab-categories">
+            <p class="description" style="margin-bottom:20px"><?php echo esc_html( $i::t('categories_tab_intro') ); ?></p>
+
+            <?php
+            $cats_ordered = array_keys( $settings['categories'] );
+            // Always show necessary first
+            usort( $cats_ordered, function($a) { return $a === 'necessary' ? -1 : 0; });
+            foreach ( $cats_ordered as $cat_key ) :
+                $cat         = $settings['categories'][ $cat_key ];
+                $is_required = ! empty( $cat['required'] );
+                $sk          = $cat['shortcode_key'] ?? $cat_key;
+                $bk          = $cat['block_key']     ?? $cat_key;
+            ?>
+            <div class="dcb-cat-edit-card<?php echo $is_required ? ' dcb-cat-required-card' : ''; ?>">
+                <div class="dcb-cat-edit-header">
+                    <span class="dcb-cat-badge dcb-badge-<?php echo esc_attr( $cat_key ); ?>"><?php echo esc_html( $cat['label'] ); ?></span>
+                    <code class="dcb-cat-internal-key"><?php echo esc_html( $cat_key ); ?></code>
+                    <?php if ( $is_required ) : ?>
+                        <span class="dcb-req-badge">🔒 <?php echo esc_html( $i::t('cat_required_field') ); ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="dcb-cat-edit-body">
+                    <div class="dcb-cat-edit-row">
+                        <label><?php echo esc_html( $i::t('cat_label_field') ); ?></label>
+                        <input type="text"
+                               name="<?php echo $S; ?>[categories][<?php echo esc_attr($cat_key); ?>][label]"
+                               value="<?php echo esc_attr( $cat['label'] ); ?>"
+                               class="regular-text">
+                    </div>
+                    <div class="dcb-cat-edit-row">
+                        <label><?php echo esc_html( $i::t('cat_description_field') ); ?></label>
+                        <textarea name="<?php echo $S; ?>[categories][<?php echo esc_attr($cat_key); ?>][description]"
+                                  rows="3" class="large-text"><?php echo esc_textarea( $cat['description'] ); ?></textarea>
+                    </div>
+                    <div class="dcb-cat-edit-row dcb-cat-keys-row">
+                        <div class="dcb-cat-key-group">
+                            <label><?php echo esc_html( $i::t('cat_shortcode_key_field') ); ?></label>
+                            <input type="text"
+                                   name="<?php echo $S; ?>[categories][<?php echo esc_attr($cat_key); ?>][shortcode_key]"
+                                   value="<?php echo esc_attr( $sk ); ?>"
+                                   class="dcb-key-input"
+                                   <?php echo $is_required ? 'readonly' : ''; ?>>
+                            <span class="description"><?php echo esc_html( $i::t('cat_shortcode_key_desc') ); ?></span>
+                            <div class="dcb-usage-example">
+                                <?php echo esc_html( $i::t('cat_shortcode_example') ); ?>
+                                <code>[dcb_cookie_list category="<span class="dcb-key-preview-sc"><?php echo esc_html($sk); ?></span>"]</code>
+                            </div>
+                        </div>
+                        <div class="dcb-cat-key-group">
+                            <label><?php echo esc_html( $i::t('cat_block_key_field') ); ?></label>
+                            <input type="text"
+                                   name="<?php echo $S; ?>[categories][<?php echo esc_attr($cat_key); ?>][block_key]"
+                                   value="<?php echo esc_attr( $bk ); ?>"
+                                   class="dcb-key-input"
+                                   <?php echo $is_required ? 'readonly' : ''; ?>>
+                            <span class="description"><?php echo esc_html( $i::t('cat_block_key_desc') ); ?></span>
+                            <div class="dcb-usage-example">
+                                <?php echo esc_html( $i::t('cat_block_example') ); ?>
+                                <code>data-dcb-category="<span class="dcb-key-preview-bk"><?php echo esc_html($bk); ?></span>"</code>
+                            </div>
+                        </div>
+                    </div>
+                    <?php if ( $is_required ) : ?>
+                    <p class="dcb-locked-note"><?php echo esc_html( $i::t('cat_required_locked') ); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
 
         <!-- Advanced -->

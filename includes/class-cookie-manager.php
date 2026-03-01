@@ -98,16 +98,16 @@ class DCB_Cookie_Manager {
 
         $cats = array(
             'de' => array(
-                'necessary'   => array( 'label' => 'Notwendig',   'description' => 'Diese Cookies sind für den Betrieb der Website unbedingt erforderlich und können nicht deaktiviert werden.', 'required' => true ),
-                'statistics'  => array( 'label' => 'Statistik',   'description' => 'Diese Cookies helfen uns zu verstehen, wie Besucher mit der Website interagieren (z. B. Google Analytics).', 'required' => false ),
-                'marketing'   => array( 'label' => 'Marketing',   'description' => 'Diese Cookies werden verwendet, um Werbeanzeigen relevanter für Sie zu gestalten.', 'required' => false ),
-                'preferences' => array( 'label' => 'Präferenzen', 'description' => 'Diese Cookies ermöglichen der Website, Informationen zu speichern, die Ihr Verhalten oder Ihr Aussehen beeinflussen.', 'required' => false ),
+                'necessary'   => array( 'label' => 'Notwendig',   'description' => 'Diese Cookies sind für den Betrieb der Website unbedingt erforderlich und können nicht deaktiviert werden.', 'required' => true,  'shortcode_key' => 'necessary',   'block_key' => 'necessary' ),
+                'statistics'  => array( 'label' => 'Statistik',   'description' => 'Diese Cookies helfen uns zu verstehen, wie Besucher mit der Website interagieren (z. B. Google Analytics).', 'required' => false, 'shortcode_key' => 'statistics',  'block_key' => 'statistics' ),
+                'marketing'   => array( 'label' => 'Marketing',   'description' => 'Diese Cookies werden verwendet, um Werbeanzeigen relevanter für Sie zu gestalten.', 'required' => false, 'shortcode_key' => 'marketing',   'block_key' => 'marketing' ),
+                'preferences' => array( 'label' => 'Präferenzen', 'description' => 'Diese Cookies ermöglichen der Website, Informationen zu speichern, die Ihr Verhalten oder Ihr Aussehen beeinflussen.', 'required' => false, 'shortcode_key' => 'preferences', 'block_key' => 'preferences' ),
             ),
             'en' => array(
-                'necessary'   => array( 'label' => 'Necessary',   'description' => 'These cookies are strictly required for the operation of the website and cannot be disabled.', 'required' => true ),
-                'statistics'  => array( 'label' => 'Statistics',  'description' => 'These cookies help us understand how visitors interact with our website (e.g. Google Analytics).', 'required' => false ),
-                'marketing'   => array( 'label' => 'Marketing',   'description' => 'These cookies are used to make advertisements more relevant to you.', 'required' => false ),
-                'preferences' => array( 'label' => 'Preferences', 'description' => 'These cookies allow the website to remember information that changes how the site behaves or looks.', 'required' => false ),
+                'necessary'   => array( 'label' => 'Necessary',   'description' => 'These cookies are strictly required for the operation of the website and cannot be disabled.', 'required' => true,  'shortcode_key' => 'necessary',   'block_key' => 'necessary' ),
+                'statistics'  => array( 'label' => 'Statistics',  'description' => 'These cookies help us understand how visitors interact with our website (e.g. Google Analytics).', 'required' => false, 'shortcode_key' => 'statistics',  'block_key' => 'statistics' ),
+                'marketing'   => array( 'label' => 'Marketing',   'description' => 'These cookies are used to make advertisements more relevant to you.', 'required' => false, 'shortcode_key' => 'marketing',   'block_key' => 'marketing' ),
+                'preferences' => array( 'label' => 'Preferences', 'description' => 'These cookies allow the website to remember information that changes how the site behaves or looks.', 'required' => false, 'shortcode_key' => 'preferences', 'block_key' => 'preferences' ),
             ),
         );
 

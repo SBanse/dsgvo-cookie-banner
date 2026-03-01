@@ -118,8 +118,22 @@ class DCB_I18n {
             'tab_banner'                => 'Banner-Text',
             'tab_design'                => 'Design',
             'tab_advanced'              => 'Erweitert',
+            'tab_categories'            => 'Kategorien',
             'tab_language'              => 'Sprache',
             'tab_help'                  => 'Hilfe',
+
+            // ── Admin: Kategorien Tab ────────────────────────────────────────
+            'categories_tab_intro'      => 'Passen Sie hier die Cookie-Kategorien an. Der Shortcode-Schlüssel wird in [dcb_cookie_list] und der Blockierungs-Schlüssel für data-dcb-category verwendet.',
+            'cat_label_field'           => 'Bezeichnung',
+            'cat_description_field'     => 'Beschreibung',
+            'cat_shortcode_key_field'   => 'Shortcode-Schlüssel',
+            'cat_shortcode_key_desc'    => 'Verwendung: [dcb_cookie_list category="…"]',
+            'cat_block_key_field'       => 'Blockierungs-Schlüssel',
+            'cat_block_key_desc'        => 'Verwendung: data-dcb-category="…"',
+            'cat_required_field'        => 'Immer aktiv (nicht deaktivierbar)',
+            'cat_required_locked'       => '🔒 Gesperrt – notwendige Cookies können nicht deaktiviert werden',
+            'cat_shortcode_example'     => 'Shortcode-Beispiel:',
+            'cat_block_example'         => 'Script-Blockierung:',
 
             // ── Admin: Banner-Text Tab ───────────────────────────────────────
             'field_banner_title'        => 'Banner-Titel',
@@ -277,8 +291,22 @@ class DCB_I18n {
             'tab_banner'                => 'Banner Text',
             'tab_design'                => 'Design',
             'tab_advanced'              => 'Advanced',
+            'tab_categories'            => 'Categories',
             'tab_language'              => 'Language',
             'tab_help'                  => 'Help',
+
+            // ── Admin: Categories tab ────────────────────────────────────────
+            'categories_tab_intro'      => 'Customise the cookie categories here. The shortcode key is used in [dcb_cookie_list] and the block key for data-dcb-category.',
+            'cat_label_field'           => 'Label',
+            'cat_description_field'     => 'Description',
+            'cat_shortcode_key_field'   => 'Shortcode Key',
+            'cat_shortcode_key_desc'    => 'Usage: [dcb_cookie_list category="…"]',
+            'cat_block_key_field'       => 'Block Key',
+            'cat_block_key_desc'        => 'Usage: data-dcb-category="…"',
+            'cat_required_field'        => 'Always active (cannot be disabled)',
+            'cat_required_locked'       => '🔒 Locked – necessary cookies cannot be disabled',
+            'cat_shortcode_example'     => 'Shortcode example:',
+            'cat_block_example'         => 'Script blocking:',
 
             // ── Admin: Banner Text tab ───────────────────────────────────────
             'field_banner_title'        => 'Banner Title',
@@ -390,3 +418,4 @@ class DCB_I18n {
         return $lang === 'en' ? $strings_en : $strings_de;
     }
 }
+// This file is auto-appended – no closing ?> needed above

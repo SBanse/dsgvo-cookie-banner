@@ -11,7 +11,7 @@ class DCB_Shortcodes {
 
     public function cookie_list( $atts ) {
         $atts = shortcode_atts( array(
-            'category' => '',
+            'category' => '',   // matches against shortcode_key OR internal key
             'style'    => 'table',
         ), $atts );
 
@@ -24,12 +24,25 @@ class DCB_Shortcodes {
             return '<p>' . esc_html( DCB_I18n::t('no_cookies_found') ) . '</p>';
         }
 
-        if ( $atts['category'] ) {
-            $cookies = array_filter( $cookies, function ( $c ) use ( $atts ) {
-                return $c['category'] === $atts['category'];
+        // Build lookup: shortcode_key → internal_key
+        // Also accept: internal_key directly (backwards compat)
+        $shortcode_map = array(); // shortcode_key => internal_key
+        foreach ( $categories as $internal_key => $cat ) {
+            $sk = $cat['shortcode_key'] ?? $internal_key;
+            $shortcode_map[ $sk ] = $internal_key;
+            // also map internal key directly so old shortcodes keep working
+            $shortcode_map[ $internal_key ] = $internal_key;
+        }
+
+        // Filter by category if requested
+        if ( $atts['category'] !== '' ) {
+            $target_internal = $shortcode_map[ $atts['category'] ] ?? $atts['category'];
+            $cookies = array_filter( $cookies, function ( $c ) use ( $target_internal ) {
+                return ( $c['category'] ?? '' ) === $target_internal;
             } );
         }
 
+        // Group cookies by internal category key
         $grouped = array();
         foreach ( $cookies as $cookie ) {
             $grouped[ $cookie['category'] ][] = $cookie;
@@ -45,10 +58,13 @@ class DCB_Shortcodes {
         }
 
         foreach ( $grouped as $cat_key => $cat_cookies ) {
-            $cat_label = $categories[ $cat_key ]['label'] ?? ucfirst( $cat_key );
-            $cat_desc  = $categories[ $cat_key ]['description'] ?? '';
+            $cat       = $categories[ $cat_key ] ?? array();
+            $cat_label = $cat['label']       ?? ucfirst( $cat_key );
+            $cat_desc  = $cat['description'] ?? '';
+            $bk        = $cat['block_key']   ?? $cat_key;
+            $sk        = $cat['shortcode_key'] ?? $cat_key;
             ?>
-            <div class="dcb-cookie-category">
+            <div class="dcb-cookie-category" data-category="<?php echo esc_attr( $cat_key ); ?>">
                 <h3 class="dcb-cat-title"><?php echo esc_html( $cat_label ); ?></h3>
                 <?php if ( $cat_desc ) : ?>
                     <p class="dcb-cat-desc"><?php echo esc_html( $cat_desc ); ?></p>
@@ -73,6 +89,16 @@ class DCB_Shortcodes {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <?php if ( $bk !== 'necessary' ) : ?>
+                <p class="dcb-block-hint">
+                    <small><?php
+                        $label = DCB_I18n::get_lang() === 'de'
+                            ? 'Script-Blockierung: '
+                            : 'Script blocking: ';
+                        echo esc_html( $label );
+                    ?><code>data-dcb-category="<?php echo esc_html( $bk ); ?>"</code></small>
+                </p>
+                <?php endif; ?>
             </div>
             <?php
         }

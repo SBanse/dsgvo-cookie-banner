@@ -62,22 +62,51 @@ class DCB_Admin {
         $prev_lang  = $prev['plugin_language'] ?? 'de';
         $new_lang   = $clean['plugin_language'];
 
+        $prev       = DCB_Cookie_Manager::get_settings();
+        $prev_lang  = $prev['plugin_language'] ?? 'de';
+        $new_lang   = $clean['plugin_language'];
+
         if ( $prev_lang !== $new_lang ) {
             // Language switched: rebuild categories in new language
-            $clean['categories'] = DCB_Cookie_Manager::default_categories( $new_lang );
+            // But preserve any custom shortcode_key / block_key the user set
+            $new_defaults = DCB_Cookie_Manager::default_categories( $new_lang );
+            $prev_cats    = $prev['categories'] ?? array();
+            foreach ( $new_defaults as $key => $cat ) {
+                if ( isset( $prev_cats[ $key ] ) ) {
+                    $new_defaults[ $key ]['shortcode_key'] = $prev_cats[ $key ]['shortcode_key'] ?? $key;
+                    $new_defaults[ $key ]['block_key']     = $prev_cats[ $key ]['block_key']     ?? $key;
+                }
+            }
+            $clean['categories'] = $new_defaults;
 
-            // Also reset banner texts to new language defaults if they still match
-            // the OLD language defaults (i.e. user hasn't customised them)
+            // Also reset banner texts if unchanged
             $old_defaults = DCB_Cookie_Manager::default_settings_for_lang( $prev_lang );
-            $new_defaults = DCB_Cookie_Manager::default_settings_for_lang( $new_lang );
-
+            $lang_defaults = DCB_Cookie_Manager::default_settings_for_lang( $new_lang );
             foreach ( array( 'banner_title', 'banner_text', 'accept_all_text', 'accept_necessary_text', 'customize_text', 'save_settings_text' ) as $f ) {
                 if ( $clean[ $f ] === $old_defaults[ $f ] || $clean[ $f ] === $prev[ $f ] ) {
-                    $clean[ $f ] = $new_defaults[ $f ];
+                    $clean[ $f ] = $lang_defaults[ $f ];
                 }
             }
         } else {
-            $clean['categories'] = DCB_Cookie_Manager::default_categories( $new_lang );
+            // Same language – save user-submitted category edits
+            $defaults = DCB_Cookie_Manager::default_categories( $new_lang );
+            $submitted_cats = $input['categories'] ?? array();
+            $clean_cats = array();
+
+            foreach ( $defaults as $key => $default_cat ) {
+                $sub = $submitted_cats[ $key ] ?? array();
+                $clean_cats[ $key ] = array(
+                    'label'         => sanitize_text_field( $sub['label']         ?? $default_cat['label'] ),
+                    'description'   => sanitize_textarea_field( $sub['description'] ?? $default_cat['description'] ),
+                    'required'      => (bool) ( $default_cat['required'] ),   // required is never user-changeable
+                    'shortcode_key' => sanitize_key( $sub['shortcode_key'] ?? $key ),
+                    'block_key'     => sanitize_key( $sub['block_key']     ?? $key ),
+                );
+                // Fallback: keys must not be empty
+                if ( empty( $clean_cats[ $key ]['shortcode_key'] ) ) $clean_cats[ $key ]['shortcode_key'] = $key;
+                if ( empty( $clean_cats[ $key ]['block_key'] ) )     $clean_cats[ $key ]['block_key']     = $key;
+            }
+            $clean['categories'] = $clean_cats;
         }
 
         return $clean;
