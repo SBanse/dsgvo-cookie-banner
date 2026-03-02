@@ -237,15 +237,86 @@ jQuery(function ($) {
         });
     });
 
-    /* ── Delete ── */
+    /* ── Delete (einzelner Cookie) ── */
     $(document).on('click', '.dcb-delete-cookie', function () {
         if (!confirm(__('delete_confirm'))) return;
         var $btn = $(this);
         var key  = $btn.data('key');
-        $.post(DCBAdmin.ajax_url, { action: 'dcb_delete_cookie', nonce: DCBAdmin.nonce, cookie_key: key }, function (res) {
-            if (res.success) {
-                $btn.closest('tr').fadeOut(300, function () { $(this).remove(); updateCounts(); });
+        $btn.prop('disabled', true).text('…');
+
+        $.ajax({
+            url:      DCBAdmin.ajax_url,
+            type:     'POST',
+            dataType: 'json',
+            data:     { action: 'dcb_delete_cookie', nonce: DCBAdmin.nonce, cookie_key: key },
+            success: function (res) {
+                if (res && res.success) {
+                    var $row     = $btn.closest('tr');
+                    var $section = $row.closest('.dcb-cat-section');
+                    $row.fadeOut(250, function () {
+                        $(this).remove();
+                        if ($section.find('.dcb-cookie-row').length === 0) {
+                            $section.fadeOut(200, function () { $(this).remove(); });
+                        } else {
+                            var n = $section.find('.dcb-cookie-row').length;
+                            $section.find('.dcb-cat-count').text(n + ' Cookie' + (n !== 1 ? 's' : ''));
+                        }
+                        updateCounts();
+                    });
+                } else {
+                    $btn.prop('disabled', false).text(__('btn_delete'));
+                    var msg = (res && res.data && res.data.message) ? res.data.message : 'Unbekannter Fehler';
+                    alert('Fehler: ' + msg);
+                }
+            },
+            error: function (xhr) {
+                // Trotz HTTP-Fehler kann valides JSON im Body stecken (z.B. durch Plugin-Output-Kontamination)
+                var res = null;
+                try { res = JSON.parse(xhr.responseText); } catch(e) {
+                    var idx = (xhr.responseText || '').indexOf('{"');
+                    if (idx >= 0) try { res = JSON.parse(xhr.responseText.substring(idx)); } catch(e2) {}
+                }
+                if (res && res.success) {
+                    // Trotz HTTP-Fehlercode hat der Server erfolgreich gelöscht
+                    var $row     = $btn.closest('tr');
+                    var $section = $row.closest('.dcb-cat-section');
+                    $row.fadeOut(250, function () {
+                        $(this).remove();
+                        if ($section.find('.dcb-cookie-row').length === 0) {
+                            $section.fadeOut(200, function () { $(this).remove(); });
+                        } else {
+                            var n = $section.find('.dcb-cookie-row').length;
+                            $section.find('.dcb-cat-count').text(n + ' Cookie' + (n !== 1 ? 's' : ''));
+                        }
+                        updateCounts();
+                    });
+                    return;
+                }
+                $btn.prop('disabled', false).text(__('btn_delete'));
+                var errMsg = (res && res.data && res.data.message)
+                    ? res.data.message
+                    : 'HTTP ' + xhr.status + ' – bitte Seite neu laden.';
+                alert('Fehler beim Löschen: ' + errMsg);
+                console.error('[DCB delete]', xhr.status, xhr.responseText ? xhr.responseText.substring(0, 300) : '');
             }
+        });
+    });
+
+    /* ── Reset (gesamte Scanner-Liste leeren) ── */
+    $('#dcb-reset-scan').on('click', function () {
+        if (!confirm('Möchten Sie wirklich alle automatisch erkannten Cookies aus der Liste entfernen? Manuell hinzugefügte Cookies bleiben erhalten.')) return;
+        var $btn = $(this).prop('disabled', true).text('Wird zurückgesetzt…');
+
+        $.post(DCBAdmin.ajax_url, { action: 'dcb_reset_scan', nonce: DCBAdmin.nonce }, function (res) {
+            if (res && res.success) {
+                location.reload();
+            } else {
+                $btn.prop('disabled', false).text('Scanner-Liste zurücksetzen');
+                alert('Zurücksetzen fehlgeschlagen.');
+            }
+        }).fail(function () {
+            $btn.prop('disabled', false).text('Scanner-Liste zurücksetzen');
+            alert('Verbindungsfehler.');
         });
     });
 
@@ -337,10 +408,16 @@ jQuery(function ($) {
     }
 
     function updateCounts() {
+        // Gesamt-Zähler
         var total = $('.dcb-cookie-row').length;
         $('.dcb-table-header h2').text(
             __('cookie_list_title') + ' (' + total + ' ' + __('cookie_list_entries') + ')'
         );
+        // Kategorie-Zähler
+        $('.dcb-cat-section').each(function () {
+            var n = $(this).find('.dcb-cookie-row').length;
+            $(this).find('.dcb-cat-count').text(n + ' Cookie' + (n !== 1 ? 's' : ''));
+        });
     }
 
     function esc(str) {

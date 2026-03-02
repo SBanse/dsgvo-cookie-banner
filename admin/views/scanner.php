@@ -39,7 +39,12 @@ $i        = 'DCB_I18n';
 
     <div class="dcb-table-header">
         <h2 style="margin:0"><?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)</h2>
-        <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
+            <?php if ( ! empty( $auto ) ) : ?>
+                <button id="dcb-reset-scan" class="button button-secondary" style="color:#a00;border-color:#a00" title="Entfernt alle automatisch erkannten Einträge. Manuell hinzugefügte Cookies bleiben erhalten.">🗑 Auto-Liste zurücksetzen</button>
+            <?php endif; ?>
+        </div>
     </div>
 
     <?php if ( empty( $all ) ) : ?>

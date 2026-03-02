@@ -18,6 +18,7 @@ class DCB_Admin {
         add_action( 'wp_ajax_dcb_save_manual_cookie', array( $this, 'ajax_save_manual' ) );
         add_action( 'wp_ajax_dcb_update_cookie',     array( $this, 'ajax_update_cookie' ) );
         add_action( 'wp_ajax_dcb_delete_cookie',     array( $this, 'ajax_delete_cookie' ) );
+        add_action( 'wp_ajax_dcb_reset_scan',        array( $this, 'ajax_reset_scan' ) );
 
         // Embed AJAX
         add_action( 'wp_ajax_dcb_embed_save',   array( $this, 'ajax_embed_save' ) );
@@ -369,12 +370,42 @@ class DCB_Admin {
     }
 
     public function ajax_delete_cookie() {
-        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return;
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungueltig - bitte Seite neu laden.' ) );
+            return;
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Keine Berechtigung.' ) );
+            return;
         }
         $key = sanitize_key( $_POST['cookie_key'] ?? '' );
-        if ( ! empty( $key ) ) DCB_Cookie_Manager::delete_cookie_entry( $key );
+        if ( empty( $key ) ) {
+            wp_send_json_error( array( 'message' => 'Kein Cookie-Schluessel uebergeben.' ) );
+            return;
+        }
+        // delete_cookie_entry gibt false zurueck wenn der Key nicht existiert -
+        // das ist kein Fehler (idempotent), daher immer success zurueckgeben.
+        DCB_Cookie_Manager::delete_cookie_entry( $key );
         wp_send_json_success();
+    }
+
+    /**
+     * Setzt die automatisch erkannte Cookie-Liste zurück.
+     * Manuell hinzugefügte Cookies (manual) bleiben erhalten.
+     */
+    public function ajax_reset_scan() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungueltig.' ) ); return;
+        }
+
+        $stored = DCB_Cookie_Manager::get_detected_cookies();
+        $stored['auto'] = array();
+        // last_scan bewusst behalten damit der Zeitstempel sichtbar bleibt
+        DCB_Cookie_Manager::save_detected_cookies( $stored );
+
+        wp_send_json_success( array( 'message' => 'Auto-Liste geleert.' ) );
     }
 
     /* ── Embed AJAX handlers ───────────────────────────────────────────────── */
