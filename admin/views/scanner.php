@@ -102,7 +102,7 @@ $i        = 'DCB_I18n';
                     </td>
                     <td class="dcb-view"><?php echo $is_manual
                         ? '<span title="' . esc_attr( $i::t('source_manual') ) . '">✏️</span>'
-                        : '<span title="' . esc_attr( $i::t('source_auto') )   . '">🤖</span>'; ?>
+                        : '<span title="Automatisch erkannt' . ( ! empty( $c['_dcb_source'] ) ? ': ' . esc_attr( $c['_dcb_source'] ) : '' ) . '">🤖</span>'; ?>
                     </td>
                     <td class="dcb-view dcb-row-actions">
                         <button class="button button-small dcb-edit-btn"><?php echo esc_html( $i::t('btn_edit') ); ?></button>

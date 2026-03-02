@@ -180,28 +180,26 @@ class DCB_Cookie_Scanner {
         $manual_keys = array_keys( $manual );
         $scan_found  = array();
 
-        $add = function ( $key ) use ( $known, $manual_keys, &$scan_found ) {
+        // $add( $key, $source ) — source wird im _dcb_source-Feld gespeichert
+        // damit im Admin genau sichtbar ist, welche Methode den Cookie gefunden hat.
+        $add = function ( $key, string $source = '' ) use ( $known, $manual_keys, &$scan_found ) {
             if ( ! isset( $known[ $key ] ) )            return;
             if ( in_array( $key, $manual_keys, true ) ) return;
             if ( isset( $scan_found[ $key ] ) )         return;
-            $scan_found[ $key ] = $known[ $key ];
+            $entry = $known[ $key ];
+            $entry['_dcb_source'] = $source;
+            $scan_found[ $key ]   = $entry;
         };
 
         // A) HTTP-Scan der eigenen Website (wichtigste Methode!)
         self::scan_via_http( $known, $manual_keys, $scan_found, $add );
-
-        // B) Plugin-Datenbank
-        self::scan_active_plugins( $add );
-
-        // C) WordPress-Options
-        self::scan_wp_options( $add );
 
         // D) Datei-Scan (Theme + Plugin-Hauptdateien)
         self::scan_source_files( $add );
 
         // E) WordPress-Core immer eintragen
         foreach ( array( '_wpnonce', 'wordpress_logged_in', 'wp_settings', 'PHPSESSID', 'dcb_consent', 'wordpress_test_cookie', 'comment_author' ) as $k ) {
-            $add( $k );
+            $add( $k, 'WordPress Core' );
         }
 
         // Zusammenführen: bisherige Auto-Einträge + Neufunde
@@ -335,172 +333,17 @@ class DCB_Cookie_Scanner {
      *  Trifft zu wenn das Plugin installiert aber kein Script direkt im HTML.
      * ════════════════════════════════════════════════════════════════════════ */
 
-    private static function scan_active_plugins( callable $add ): void {
-        $plugins = get_option( 'active_plugins', array() );
-        if ( is_multisite() ) {
-            $network = get_site_option( 'active_sitewide_plugins', array() );
-            $plugins = array_merge( $plugins, array_keys( $network ) );
-        }
-
-        $plugin_map = array(
-            // Google Analytics / GTM
-            'google-analytics-for-wordpress'   => array( '_ga', '_gid', '_gat', '_gat_UA', '_ga_XXXXXX' ),
-            'ga-google-analytics'              => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'analytify'                        => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'google-site-kit'                  => array( '_ga', '_gid', '_gat', '_gac', '_ga_XXXXXX', '_dc_gtm', 'CONSENT', 'SOCS' ),
-            'monsterinsights'                  => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'exactmetrics'                     => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'rankmath'                         => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'duracelltomi-google-tag-manager'  => array( '_ga', '_gid', '_gat', '_gcl_au', '_ga_XXXXXX', '_dc_gtm' ),
-            'gtm4wp'                           => array( '_ga', '_gid', '_gat', '_gcl_au', '_ga_XXXXXX', '_dc_gtm' ),
-            'wp-analytify'                     => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'independent-analytics'            => array( 'iana_session' ),
-            // Matomo
-            'wp-piwik'                         => array( '_pk_id', '_pk_ses', '_pk_ref', 'mtm_consent' ),
-            'matomo'                           => array( '_pk_id', '_pk_ses', '_pk_ref', 'mtm_consent' ),
-            'woocommerce-matomo'               => array( '_pk_id', '_pk_ses', '_pk_ref' ),
-            // Facebook / Meta Pixel
-            'pixel-caffeine'                   => array( '_fbp', '_fbc', 'fr', 'datr' ),
-            'facebook-for-woocommerce'         => array( '_fbp', '_fbc', 'fr', 'datr' ),
-            'pixelyoursite'                    => array( '_fbp', '_fbc', 'fr', '_ttp', 'tt_webid', '_gcl_au', 'IDE' ),
-            'meta-pixel'                       => array( '_fbp', '_fbc', 'fr', 'datr' ),
-            'tracking-code-manager'            => array( '_fbp', '_ga', '_gid', '_gcl_au' ),
-            // WooCommerce
-            'woocommerce'                      => array( 'woocommerce_cart_hash', 'woocommerce_items_in_cart', 'wp_woocommerce_session', 'woocommerce_recently_viewed', 'store_notice' ),
-            'easy-digital-downloads'           => array(),
-            // Payments
-            'woocommerce-gateway-stripe'       => array( '__stripe_mid', '__stripe_sid', '__stripe_device' ),
-            'woo-stripe-payment'               => array( '__stripe_mid', '__stripe_sid', '__stripe_device' ),
-            'stripe-payments'                  => array( '__stripe_mid', '__stripe_sid' ),
-            'paypal-checkout-for-woocommerce'  => array( 'ts', 'ts_c', 'nsid' ),
-            'woocommerce-paypal-payments'      => array( 'ts', 'ts_c', 'nsid' ),
-            // Chat / Support
-            'hubspot'                          => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc', '__hs_do_not_track' ),
-            'leadin'                           => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
-            'wp-hubspot'                       => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
-            'zendesk'                          => array( '__zlcmid', 'zdVisitorId' ),
-            'crisp'                            => array( 'crisp-client' ),
-            'tidio'                            => array(),
-            'livechat'                         => array(),
-            // Email
-            'mailchimp-for-wp'                 => array( 'MC_USER_INFO', '_mc_cookies' ),
-            'mailchimp'                        => array( 'MC_USER_INFO', '_mc_cookies' ),
-            // Social Login
-            'nextend-facebook-connect'         => array( '_fbp', 'fr', 'datr', 'c_user' ),
-            'miniorange-social-login'          => array( '_fbp', 'fr', 'guest_id', 'li_gc' ),
-            // Security
-            'wordfence'                        => array( 'wordfence_verifiedHuman' ),
-            'sucuri-scanner'                   => array(),
-            'ithemes-security'                 => array(),
-            // CDN / Cache
-            'wp-rocket'                        => array( 'rocket_browser_class' ),
-            'cloudflare'                       => array( '__cf_bm', 'cf_clearance' ),
-            // LinkedIn
-            'linkedin-insight-tag'             => array( 'li_gc', 'lidc', 'bcookie', 'bscookie', 'AnalyticsSyncHistory', 'UserMatchHistory' ),
-            // Hotjar
-            'hotjar'                           => array( '_hjSessionUser', '_hjSession', '_hjFirstSeen', '_hjAbsoluteSessionInProgress', '_hjTLDTest' ),
-            // Microsoft
-            'microsoft-clarity'                => array( '_clsk', '_clck', 'CLID', 'MUID' ),
-            // Consent
-            'cookie-law-info'                  => array( 'cookielawinfo-checkbox', 'viewed_cookie_policy' ),
-            'gdpr-cookie-consent'              => array( 'cookielawinfo-checkbox', 'viewed_cookie_policy' ),
-            'complianz'                        => array(),
-            'borlabs-cookie'                   => array(),
-            'cookieyes'                        => array(),
-            // Page Builders
-            'elementor'                        => array( 'elementor' ),
-        );
-
-        foreach ( $plugins as $plugin_file ) {
-            $slug = explode( '/', $plugin_file )[0];
-            foreach ( $plugin_map as $match_slug => $keys ) {
-                if ( strpos( $slug, $match_slug ) !== false ) {
-                    foreach ( $keys as $ck ) $add( $ck );
-                }
-            }
-        }
-    }
-
-
-    /* ═══════════════════════════════════════════════════════════════════════
-     *  METHODE C — WordPress-Options
-     *
-     *  Viele Plugins schreiben ihren API-Key oder ihre Konfig in wp_options.
-     *  Wenn diese Option vorhanden ist → Plugin konfiguriert → Cookies aktiv.
-     * ════════════════════════════════════════════════════════════════════════ */
-
-    private static function scan_wp_options( callable $add ): void {
-        $option_map = array(
-            // Google
-            'googlesitekit_db_version'         => array( '_ga', '_gid', '_gat', '_ga_XXXXXX', 'CONSENT', 'SOCS' ),
-            'googlesitekit_analytics_settings'  => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'exactmetrics_settings'             => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'ga_google_analytics_options'       => array( '_ga', '_gid', '_gat' ),
-            'analytify_settings'                => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            'monsterinsights_settings'          => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            // WooCommerce
-            'woocommerce_db_version'            => array( 'woocommerce_cart_hash', 'woocommerce_items_in_cart', 'wp_woocommerce_session' ),
-            // Security
-            'wordfence_activated_on'            => array( 'wordfence_verifiedHuman' ),
-            // HubSpot
-            'hubwoo_portal_id'                  => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
-            'leadin_api_key'                    => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
-            // Facebook
-            'fb_pixel_option'                   => array( '_fbp', '_fbc', 'fr' ),
-            'pixel_your_site_options'           => array( '_fbp', '_fbc', '_ttp', '_gcl_au' ),
-            'fca_eoi_settings'                  => array( '_fbp', 'fr' ),
-            // Mailchimp
-            'mc4wp_last_import'                 => array( 'MC_USER_INFO', '_mc_cookies' ),
-            // Consent
-            'cookie_law_info_settings'          => array( 'cookielawinfo-checkbox', 'viewed_cookie_policy' ),
-            'CookieScanner'                     => array( 'CookieConsent' ),
-            // Matomo
-            'matomo_version'                    => array( '_pk_id', '_pk_ses', '_pk_ref' ),
-            'piwik_version'                     => array( '_pk_id', '_pk_ses', '_pk_ref' ),
-            // Klaviyo
-            'klaviyo_settings'                  => array( '__kla_id' ),
-            'kl_settings'                       => array( '__kla_id' ),
-        );
-
-        foreach ( $option_map as $option => $keys ) {
-            if ( get_option( $option ) !== false ) {
-                foreach ( $keys as $ck ) $add( $ck );
-            }
-        }
-    }
-
-
-    /* ═══════════════════════════════════════════════════════════════════════
-     *  METHODE D — Quellcode-Scan (Plugin-Hauptdateien + Theme-Dateien)
-     *
-     *  Scannt die Hauptdatei jedes aktiven Plugins + functions.php des Themes
-     *  nach bekannten Script-URLs / JS-Funktionsnamen.
-     *
-     *  Warum nur Hauptdateien? Vollständiger Ordner-Scan wäre zu langsam.
-     *  Die Haupt-PHP-Datei (plugin-name/plugin-name.php) enthält typisch
-     *  die wp_enqueue_script-Calls mit den externen Script-URLs.
-     * ════════════════════════════════════════════════════════════════════════ */
-
     private static function scan_source_files( callable $add ): void {
         $km    = self::get_keyword_map();
         $files = array();
 
-        // Plugin-Hauptdateien
+        // Nur die Plugin-Hauptdatei (plugin-folder/plugin-file.php) scannen.
+        // JS-Unterordner werden NICHT gescannt: minifizierte Bundles enthalten
+        // oft auskommentierte oder inaktive Code-Pfade anderer Services
+        // und produzieren so False Positives.
         foreach ( get_option( 'active_plugins', array() ) as $plugin_file ) {
             $path = WP_PLUGIN_DIR . '/' . $plugin_file;
             if ( file_exists( $path ) ) $files[] = $path;
-
-            // Auch asset-Datei im Plugin-Ordner suchen (z.B. assets/js/tracking.js)
-            // → prüfe ob es eine einzige JS-Datei im assets/js Ordner gibt
-            $slug_dir = WP_PLUGIN_DIR . '/' . explode('/', $plugin_file)[0];
-            foreach ( array( '/assets/js/', '/js/', '/src/' ) as $js_subdir ) {
-                $js_dir = $slug_dir . $js_subdir;
-                if ( is_dir( $js_dir ) ) {
-                    foreach ( (array) glob( $js_dir . '*.js' ) as $js_file ) {
-                        $files[] = $js_file;
-                    }
-                }
-            }
         }
 
         // Theme functions.php (Child + Parent)
@@ -511,17 +354,15 @@ class DCB_Cookie_Scanner {
             if ( $parent !== $child && file_exists( $parent ) ) $files[] = $parent;
         } catch ( \Throwable $e ) {}
 
-        // Jede Datei lesen und Keywords suchen
         foreach ( array_unique( $files ) as $file ) {
             if ( ! is_readable( $file ) ) continue;
             try {
-                // Nur erste 200 KB lesen (Performance)
                 $handle = fopen( $file, 'r' );
                 if ( ! $handle ) continue;
                 $content = fread( $handle, 204800 );
                 fclose( $handle );
                 if ( $content !== false ) {
-                    self::apply_keywords( $content, $km, $add );
+                    self::apply_keywords( $content, $km, $add, basename( $file ) );
                 }
             } catch ( \Throwable $e ) {}
         }
@@ -533,18 +374,15 @@ class DCB_Cookie_Scanner {
      * ════════════════════════════════════════════════════════════════════════ */
 
     private static function get_keyword_map(): array {
+        // WICHTIG: Nur vollständige externe URLs oder sehr spezifische JS-Signaturen.
+        // Kurze generische Strings wie 'UA-', 'gtag(' oder 'dataLayer' kommen in
+        // fast jedem Plugin-Bundle vor und produzieren False Positives.
         return array(
-            // Google Analytics (UA + GA4)
+            // Google Analytics / GTM — nur vollständige Script-URLs
             'google-analytics.com/analytics'   => array( '_ga', '_gid', '_gat' ),
             'googletagmanager.com/gtag'         => array( '_ga', '_gid', '_gat', '_ga_XXXXXX', '_gcl_au', '_dc_gtm' ),
-            'gtag('                             => array( '_ga', '_gid', '_gat', '_ga_XXXXXX' ),
-            "ga('send'"                         => array( '_ga', '_gid', '_gat' ),
-            'GoogleAnalyticsObject'             => array( '_ga', '_gid', '_gat' ),
-            'UA-'                               => array( '_ga', '_gid', '_gat', '_gat_UA' ),
-            // GTM
             'googletagmanager.com/gtm'          => array( '_ga', '_gid', '_gcl_au', '_dc_gtm' ),
-            'GTM-'                              => array( '_ga', '_gid', '_gcl_au', '_dc_gtm' ),
-            'dataLayer.push'                    => array( '_ga', '_gid', '_gcl_au', '_dc_gtm' ),
+            // Google Ads / DoubleClick
             // Google Ads / DoubleClick
             'googleadservices.com'              => array( '_gcl_au', '_gcl_aw', 'IDE' ),
             'googlesyndication.com'             => array( '_gcl_au', 'IDE' ),
@@ -558,8 +396,6 @@ class DCB_Cookie_Scanner {
             // Hotjar
             'hotjar.com'                        => array( '_hjSessionUser', '_hjSession', '_hjFirstSeen', '_hjAbsoluteSessionInProgress' ),
             'static.hotjar.com'                 => array( '_hjSessionUser', '_hjSession', '_hjFirstSeen', '_hjAbsoluteSessionInProgress' ),
-            'hjid'                              => array( '_hjSessionUser', '_hjSession', '_hjFirstSeen' ),
-            "_hjSettings"                       => array( '_hjSessionUser', '_hjSession', '_hjFirstSeen' ),
             // LinkedIn
             'snap.licdn.com'                    => array( 'li_gc', 'lidc', 'bcookie', 'bscookie', 'AnalyticsSyncHistory', 'UserMatchHistory' ),
             'linkedin.com/insight'              => array( 'li_gc', 'lidc', 'bcookie' ),
@@ -590,9 +426,7 @@ class DCB_Cookie_Scanner {
             'hs-scripts.com'                    => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
             'js.hs-analytics.net'               => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
             'js.hubspot.com'                    => array( 'hubspotutk', '__hstc', '__hssc', '__hssrc' ),
-            'hsLeadGuid'                        => array( 'hubspotutk', '__hstc' ),
             // Intercom
-            'intercomSettings'                  => array( 'intercom-device-id', 'intercom-session' ),
             'widget.intercom.io'                => array( 'intercom-device-id', 'intercom-session' ),
             'js.intercomcdn.com'                => array( 'intercom-device-id', 'intercom-session' ),
             // Zendesk
@@ -615,7 +449,6 @@ class DCB_Cookie_Scanner {
             'sc-static.net'                     => array( '_scid', '_sctr' ),
             // Microsoft Bing Ads
             'bat.bing.com'                      => array( '_uetmsclkid', '_uetvid', 'MUID', 'SRM_B' ),
-            'uetq'                              => array( '_uetmsclkid', '_uetvid' ),
             // Microsoft Clarity
             'clarity.ms'                        => array( '_clsk', '_clck', 'CLID', 'MUID' ),
             "clarity('set'"                     => array( '_clsk', '_clck', 'CLID' ),
@@ -626,7 +459,6 @@ class DCB_Cookie_Scanner {
             'matomo.js'                         => array( '_pk_id', '_pk_ses', '_pk_ref' ),
             // Cloudflare
             'cloudflare.com/cdn-cgi'            => array( '__cf_bm', 'cf_clearance' ),
-            '__cf_bm'                           => array( '__cf_bm', 'cf_clearance' ),
             // Pinterest
             'ct.pinterest.com'                  => array( '_pinterest_cm', '_pinterest_ct_ua' ),
             "pintrk('load'"                     => array( '_pinterest_cm', '_pinterest_ct_ua' ),
@@ -636,11 +468,9 @@ class DCB_Cookie_Scanner {
             'amplitude.getInstance'             => array( 'amplitude_id' ),
             // Mixpanel
             'cdn.mxpnl.com'                     => array( 'mp_' ),
-            'mixpanel.init'                     => array( 'mp_' ),
             'cdn4.mxpnl.com'                    => array( 'mp_' ),
             // Segment
             'cdn.segment.com'                   => array( 'ajs_user_id', 'ajs_anonymous_id', 'ajs_group_id' ),
-            'analytics.js'                      => array( 'ajs_user_id', 'ajs_anonymous_id' ),
             // Criteo
             'static.criteo.net'                 => array( 'cto_bundle', 'cto_bidid' ),
             'dis.criteo.com'                    => array( 'cto_bundle', 'cto_bidid' ),
@@ -648,10 +478,10 @@ class DCB_Cookie_Scanner {
     }
 
     /* ── Keyword-Map anwenden ── */
-    private static function apply_keywords( string $content, array $km, callable $add ): void {
+    private static function apply_keywords( string $content, array $km, callable $add, string $source = '' ): void {
         foreach ( $km as $keyword => $keys ) {
             if ( stripos( $content, $keyword ) !== false ) {
-                foreach ( $keys as $ck ) $add( $ck );
+                foreach ( $keys as $ck ) $add( $ck, $source ?: 'HTML:' . $keyword );
             }
         }
     }

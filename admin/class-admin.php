@@ -33,10 +33,18 @@ class DCB_Admin {
     /* ── Temporärer Debug-Handler ──────────────────────────────────────────── */
     public function ajax_debug() {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        $stored  = DCB_Cookie_Manager::get_detected_cookies();
+        $sources = array();
+        foreach ( array_merge( $stored['auto'] ?? array(), $stored['manual'] ?? array() ) as $key => $data ) {
+            $sources[ $key ] = array(
+                'name'   => $data['name']        ?? $key,
+                'source' => $data['_dcb_source'] ?? '(unbekannt)',
+            );
+        }
         wp_send_json_success( array(
             'page_hooks'     => $this->page_hooks,
-            'current_screen' => function_exists('get_current_screen') ? (array) get_current_screen() : 'unavailable',
             'nonce_valid'    => (bool) wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ),
+            'cookie_sources' => $sources,
         ) );
     }
 
@@ -267,9 +275,9 @@ class DCB_Admin {
                 $match_hit = false;
 
                 if ( $match === '' ) {
-                    // Exakter Name (Wildcards im Namen ignorieren → Prefix-Vergleich)
-                    $clean = str_replace( array('*','.'), '', $data['name'] );
-                    $match_hit = ( $cn === $clean || $cn === $data['name'] || strpos( $cn, rtrim($clean,'-_') ) === 0 );
+                    // Nur exakter Treffer — kein Prefix-Vergleich, da sonst
+                    // z.B. '_gat' auf '_gat_UA-XXXXXXXX' matcht.
+                    $match_hit = ( $cn === $data['name'] );
                 } elseif ( strpos( $match, 'prefix:' ) === 0 ) {
                     $prefix = substr( $match, 7 );
                     $match_hit = ( strpos( $cn, $prefix ) === 0 );
