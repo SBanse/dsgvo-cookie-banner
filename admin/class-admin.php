@@ -3,6 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class DCB_Admin {
 
+    /** Stores the page hook suffixes returned by add_*_page() */
+    private $page_hooks = array();
+
     public function __construct() {
         add_action( 'admin_menu',            array( $this, 'add_menu' ) );
         add_action( 'admin_init',            array( $this, 'register_settings' ) );
@@ -10,9 +13,12 @@ class DCB_Admin {
 
         // Cookie AJAX
         add_action( 'wp_ajax_dcb_scan',              array( $this, 'ajax_scan' ) );
+        add_action( 'wp_ajax_dcb_browser_scan',      array( $this, 'ajax_browser_scan' ) );
+        add_action( 'wp_ajax_dcb_get_scan_url',      array( $this, 'ajax_get_scan_url' ) );
         add_action( 'wp_ajax_dcb_save_manual_cookie', array( $this, 'ajax_save_manual' ) );
         add_action( 'wp_ajax_dcb_update_cookie',     array( $this, 'ajax_update_cookie' ) );
         add_action( 'wp_ajax_dcb_delete_cookie',     array( $this, 'ajax_delete_cookie' ) );
+        add_action( 'wp_ajax_dcb_reset_scan',        array( $this, 'ajax_reset_scan' ) );
 
         // Embed AJAX
         add_action( 'wp_ajax_dcb_embed_save',   array( $this, 'ajax_embed_save' ) );
@@ -20,12 +26,35 @@ class DCB_Admin {
         add_action( 'wp_ajax_dcb_embed_reset',  array( $this, 'ajax_embed_reset' ) );
         add_action( 'wp_ajax_dcb_embed_delete', array( $this, 'ajax_embed_delete' ) );
         add_action( 'wp_ajax_dcb_embed_create', array( $this, 'ajax_embed_create' ) );
+        // Debug-Endpunkt (nur für Admins)
+        add_action( 'wp_ajax_dcb_debug', array( $this, 'ajax_debug' ) );
+    }
+
+    /* ── Temporärer Debug-Handler ──────────────────────────────────────────── */
+    public function ajax_debug() {
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        $stored  = DCB_Cookie_Manager::get_detected_cookies();
+        $sources = array();
+        foreach ( array_merge( $stored['auto'] ?? array(), $stored['manual'] ?? array() ) as $key => $data ) {
+            $sources[ $key ] = array(
+                'name'   => $data['name']        ?? $key,
+                'source' => $data['_dcb_source'] ?? '(unbekannt)',
+            );
+        }
+        wp_send_json_success( array(
+            'page_hooks'     => $this->page_hooks,
+            'nonce_valid'    => (bool) wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ),
+            'cookie_sources' => $sources,
+        ) );
     }
 
     /* ── Menu ──────────────────────────────────────────────────────────────── */
 
     public function add_menu() {
-        add_menu_page(
+        // Store every hook suffix so enqueue_assets() can match them reliably.
+        // WordPress generates hooks like "toplevel_page_dcb-settings" and
+        // "cookie-banner_page_dcb-scanner" – NOT the slug itself.
+        $this->page_hooks[] = add_menu_page(
             DCB_I18n::t('admin_page_title'),
             DCB_I18n::t('admin_menu_label'),
             'manage_options',
@@ -34,11 +63,12 @@ class DCB_Admin {
             'dashicons-privacy',
             85
         );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_settings'), DCB_I18n::t('admin_submenu_settings'), 'manage_options', 'dcb-settings', array( $this, 'render_settings_page' ) );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_scanner'),  DCB_I18n::t('admin_submenu_scanner'),  'manage_options', 'dcb-scanner',  array( $this, 'render_scanner_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_settings'), DCB_I18n::t('admin_submenu_settings'), 'manage_options', 'dcb-settings', array( $this, 'render_settings_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_scanner'),  DCB_I18n::t('admin_submenu_scanner'),  'manage_options', 'dcb-scanner',  array( $this, 'render_scanner_page' ) );
         $embeds_label = DCB_I18n::get_lang() === 'de' ? '🖼️ Einbettungen' : '🖼️ Embeds';
-        add_submenu_page( 'dcb-settings', $embeds_label, $embeds_label, 'manage_options', 'dcb-embeds',   array( $this, 'render_embeds_page' ) );
-        add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents', array( $this, 'render_consents_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', $embeds_label, $embeds_label, 'manage_options', 'dcb-embeds', array( $this, 'render_embeds_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents', array( $this, 'render_consents_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_help'),     DCB_I18n::t('admin_submenu_help'),     'manage_options', 'dcb-help',     array( $this, 'render_help_page' ) );
     }
 
     /* ── Settings registration ─────────────────────────────────────────────── */
@@ -118,9 +148,23 @@ class DCB_Admin {
     /* ── Assets ────────────────────────────────────────────────────────────── */
 
     public function enqueue_assets( $hook ) {
-        if ( strpos( $hook, 'dcb-' ) === false ) return;
+        // Robustester Weg: gegen die gespeicherten Hook-Suffixe prüfen.
+        // $this->page_hooks enthält genau die Strings, die WordPress für unsere
+        // Seiten zurückgibt (z.B. "cookie-banner_page_dcb-scanner").
+        // Zusätzlich: Fallback über get_current_screen() für ältere WP-Versionen.
+        $is_our_page = in_array( $hook, $this->page_hooks, true );
 
-        // Base admin assets (all pages)
+        if ( ! $is_our_page ) {
+            $screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+            if ( $screen ) {
+                $is_our_page = strpos( $screen->id, 'dcb-' ) !== false
+                    || strpos( $screen->base, 'dcb-' ) !== false;
+            }
+        }
+
+        if ( ! $is_our_page ) return;
+
+        // Base admin assets (alle Plugin-Seiten)
         wp_enqueue_style(  'dcb-admin', DCB_PLUGIN_URL . 'admin/admin.css', array(), DCB_VERSION );
         wp_enqueue_script( 'dcb-admin', DCB_PLUGIN_URL . 'admin/admin.js',  array( 'jquery' ), DCB_VERSION, true );
         wp_localize_script( 'dcb-admin', 'DCBAdmin', array(
@@ -130,7 +174,7 @@ class DCB_Admin {
             'i18n'     => DCB_I18n::all(),
         ) );
 
-        // Embeds page: extra assets
+        // Embeds-Seite: zusätzliche Assets
         if ( strpos( $hook, 'dcb-embeds' ) !== false ) {
             wp_enqueue_style(  'dcb-embeds-admin', DCB_PLUGIN_URL . 'admin/embeds.css', array(), DCB_VERSION );
             wp_enqueue_style(  'dcb-embeds-front', DCB_PLUGIN_URL . 'public/css/embeds.css', array(), DCB_VERSION );
@@ -141,18 +185,166 @@ class DCB_Admin {
     /* ── Cookie AJAX handlers ──────────────────────────────────────────────── */
 
     public function ajax_scan() {
-        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-        $cookies = DCB_Cookie_Scanner::scan();
-        wp_send_json_success( array( 'count' => count( $cookies ), 'cookies' => array_values( $cookies ) ) );
+        // Alle vorherigen Output-Buffer leeren (PHP-Warnings anderer Plugins etc.)
+        while ( ob_get_level() > 0 ) {
+            ob_end_clean();
+        }
+
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig – bitte Seite neu laden.' ) );
+            return;
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Keine Berechtigung.' ) );
+            return;
+        }
+
+        try {
+            $before  = count( DCB_Cookie_Manager::get_detected_cookies()['auto'] ?? array() );
+            $cookies = DCB_Cookie_Scanner::scan();
+            $after   = count( $cookies );
+            $new     = max( 0, $after - $before );
+
+            wp_send_json_success( array(
+                'count'   => $after,
+                'new'     => $new,
+                'cookies' => array_values( $cookies ),
+            ) );
+        } catch ( \Throwable $e ) {
+            wp_send_json_error( array( 'message' => 'Scanner-Fehler: ' . $e->getMessage() ) );
+        }
+    }
+
+    /**
+     * Erzeugt ein einmalig gültiges Token und gibt die Scan-URL zurück.
+     * Das Token ist 60 Sekunden gültig (Transient).
+     */
+    public function ajax_get_scan_url() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ) ); return;
+        }
+
+        // Dieselbe URL-Liste wie der Server-Scan verwenden
+        $raw_urls = DCB_Cookie_Scanner::get_public_urls();
+
+        $scan_urls = array();
+        foreach ( $raw_urls as $url ) {
+            $token = wp_generate_password( 32, false );
+            set_transient( 'dcb_scan_token_' . $token, 1, 120 ); // 2 min gültig
+            $scan_urls[] = array(
+                'url'   => add_query_arg( 'dcb_browser_scan', $token, $url ),
+                'label' => parse_url( $url, PHP_URL_PATH ) ?: '/',
+            );
+        }
+
+        wp_send_json_success( array( 'urls' => $scan_urls ) );
+    }
+
+    /**
+     * Empfängt die vom Browser gemeldeten Cookie-Namen (via postMessage → AJAX),
+     * gleicht sie gegen die Datenbank ab und speichert Treffer + Unbekannte.
+     */
+    public function ajax_browser_scan() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ) ); return;
+        }
+
+        $raw_cookies = $_POST['cookies'] ?? '';
+        $raw_ls      = $_POST['ls_keys'] ?? '';
+
+        // Komma-getrennte Liste bereinigen
+        $cookie_names = array_filter( array_map( 'sanitize_text_field', explode( ',', $raw_cookies ) ) );
+        $ls_keys      = array_filter( array_map( 'sanitize_text_field', explode( ',', $raw_ls ) ) );
+
+        if ( empty( $cookie_names ) ) {
+            wp_send_json_error( array( 'message' => 'Keine Cookie-Namen empfangen.' ) ); return;
+        }
+
+        $known   = DCB_Cookie_Scanner::known_cookies();
+        $stored  = DCB_Cookie_Manager::get_detected_cookies();
+        $manual  = $stored['manual'] ?? array();
+        $auto    = $stored['auto']   ?? array();
+        $manual_keys = array_keys( $manual );
+
+        $matched   = array(); // Cookies aus Datenbank erkannt
+        $unknown   = array(); // Unbekannte Cookies — trotzdem eintragen
+
+        foreach ( $cookie_names as $cn ) {
+            $found_key = false;
+
+            // Exakter Treffer
+            foreach ( $known as $key => $data ) {
+                if ( in_array( $key, $manual_keys, true ) ) continue;
+
+                $match = $data['match'] ?? '';
+                $match_hit = false;
+
+                if ( $match === '' ) {
+                    // Nur exakter Treffer — kein Prefix-Vergleich, da sonst
+                    // z.B. '_gat' auf '_gat_UA-XXXXXXXX' matcht.
+                    $match_hit = ( $cn === $data['name'] );
+                } elseif ( strpos( $match, 'prefix:' ) === 0 ) {
+                    $prefix = substr( $match, 7 );
+                    $match_hit = ( strpos( $cn, $prefix ) === 0 );
+                }
+
+                if ( $match_hit ) {
+                    if ( ! isset( $auto[ $key ] ) && ! isset( $matched[ $key ] ) ) {
+                        $matched[ $key ] = $data;
+                    }
+                    $found_key = true;
+                    break;
+                }
+            }
+
+            // Unbekannter Cookie → als "Unbekannt / Notwendig" eintragen
+            // damit der Admin es sehen und kategorisieren kann
+            if ( ! $found_key ) {
+                // Interne/Browser/WordPress-Cookies überspringen
+                $skip_prefixes = array( 'wordpress_', 'wp-', 'dcb_', '__utmz_', 'PHPSESSID', '_wpnonce', 'comment_' );
+                $skip = false;
+                foreach ( $skip_prefixes as $sp ) {
+                    if ( strpos( $cn, $sp ) === 0 ) { $skip = true; break; }
+                }
+                if ( ! $skip && strlen( $cn ) > 1 && strlen( $cn ) < 80 ) {
+                    $unknown_key = 'unknown_' . sanitize_key( $cn );
+                    if ( ! isset( $auto[ $unknown_key ] ) && ! isset( $manual[ $unknown_key ] ) ) {
+                        $unknown[ $unknown_key ] = array(
+                            'name'     => $cn,
+                            'category' => 'necessary',
+                            'provider' => '?',
+                            'purpose'  => '(Browser-Scan – bitte prüfen)',
+                            'duration' => '?',
+                        );
+                    }
+                }
+            }
+        }
+
+        // Zusammenführen
+        $new_auto = array_merge( $auto, $matched, $unknown );
+        DCB_Cookie_Manager::save_detected_cookies( array(
+            'auto'      => $new_auto,
+            'manual'    => $manual,
+            'last_scan' => current_time( 'mysql' ),
+        ) );
+
+        wp_send_json_success( array(
+            'matched'  => count( $matched ),
+            'unknown'  => count( $unknown ),
+            'total'    => count( $new_auto ),
+            'new'      => count( $matched ) + count( $unknown ),
+        ) );
     }
 
     public function ajax_save_manual() {
-        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return;
+        }
         $name = sanitize_text_field( $_POST['cookie_name'] ?? '' );
-        if ( empty( $name ) ) wp_send_json_error( array( 'message' => 'No cookie name given.' ) );
+        if ( empty( $name ) ) { wp_send_json_error( array( 'message' => 'Kein Cookie-Name.' ) ); return; }
 
         $key  = sanitize_key( $name );
         $data = array(
@@ -165,15 +357,15 @@ class DCB_Admin {
 
         DCB_Cookie_Manager::update_cookie_entry( $key, $data )
             ? wp_send_json_success()
-            : wp_send_json_error( array( 'message' => 'Save failed.' ) );
+            : wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen.' ) );
     }
 
     public function ajax_update_cookie() {
-        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return;
+        }
         $key = sanitize_key( $_POST['cookie_key'] ?? '' );
-        if ( empty( $key ) ) wp_send_json_error( array( 'message' => 'No key given.' ) );
+        if ( empty( $key ) ) { wp_send_json_error( array( 'message' => 'Kein Schlüssel.' ) ); return; }
 
         $data = array(
             'name'     => $_POST['name']     ?? '',
@@ -188,37 +380,64 @@ class DCB_Admin {
             $updated = $stored['manual'][ $key ] ?? $data;
             wp_send_json_success( array( 'cookie' => $updated ) );
         } else {
-            wp_send_json_error( array( 'message' => 'Save failed.' ) );
+            wp_send_json_error( array( 'message' => 'Speichern fehlgeschlagen.' ) );
         }
     }
 
     public function ajax_delete_cookie() {
-        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungueltig - bitte Seite neu laden.' ) );
+            return;
+        }
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Keine Berechtigung.' ) );
+            return;
+        }
         $key = sanitize_key( $_POST['cookie_key'] ?? '' );
-        if ( ! empty( $key ) ) DCB_Cookie_Manager::delete_cookie_entry( $key );
+        if ( empty( $key ) ) {
+            wp_send_json_error( array( 'message' => 'Kein Cookie-Schluessel uebergeben.' ) );
+            return;
+        }
+        // delete_cookie_entry gibt false zurueck wenn der Key nicht existiert -
+        // das ist kein Fehler (idempotent), daher immer success zurueckgeben.
+        DCB_Cookie_Manager::delete_cookie_entry( $key );
         wp_send_json_success();
+    }
+
+    /**
+     * Setzt die automatisch erkannte Cookie-Liste zurück.
+     * Manuell hinzugefügte Cookies (manual) bleiben erhalten.
+     */
+    public function ajax_reset_scan() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungueltig.' ) ); return;
+        }
+
+        $stored = DCB_Cookie_Manager::get_detected_cookies();
+        $stored['auto'] = array();
+        // last_scan bewusst behalten damit der Zeitstempel sichtbar bleibt
+        DCB_Cookie_Manager::save_detected_cookies( $stored );
+
+        wp_send_json_success( array( 'message' => 'Auto-Liste geleert.' ) );
     }
 
     /* ── Embed AJAX handlers ───────────────────────────────────────────────── */
 
-    private function embed_nonce_check(): void {
-        check_ajax_referer( 'dcb_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+    private function verify_nonce(): bool {
+        return wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' )
+            && current_user_can( 'manage_options' );
     }
 
     public function ajax_embed_save() {
-        $this->embed_nonce_check();
+        if ( ! $this->verify_nonce() ) { wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return; }
 
         $id = sanitize_key( $_POST['embed_id'] ?? '' );
-        if ( ! $id ) wp_send_json_error( array( 'message' => 'No embed ID.' ) );
+        if ( ! $id ) { wp_send_json_error( array( 'message' => 'Keine Embed-ID.' ) ); return; }
 
-        // Get current embed so we can merge (preserve id, preview_type etc.)
         $current = DCB_Embeds::get_embed( $id ) ?? array();
-
         $data = DCB_Embeds::sanitise_embed( array_merge( $current, $_POST, array( 'id' => $id ) ) );
-        // Keep enabled state and preview_type from existing
         $data['enabled']      = $current['enabled']      ?? true;
         $data['preview_type'] = $current['preview_type'] ?? 'color';
 
@@ -227,13 +446,13 @@ class DCB_Admin {
     }
 
     public function ajax_embed_toggle() {
-        $this->embed_nonce_check();
+        if ( ! $this->verify_nonce() ) { wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return; }
 
         $id      = sanitize_key( $_POST['embed_id'] ?? '' );
         $enabled = ! empty( $_POST['enabled'] );
 
         $current = DCB_Embeds::get_embed( $id );
-        if ( ! $current ) wp_send_json_error( array( 'message' => 'Unknown embed.' ) );
+        if ( ! $current ) { wp_send_json_error( array( 'message' => 'Unbekannter Embed-Typ.' ) ); return; }
 
         $current['enabled'] = $enabled;
         DCB_Embeds::save_embed( $id, $current );
@@ -241,21 +460,20 @@ class DCB_Admin {
     }
 
     public function ajax_embed_reset() {
-        $this->embed_nonce_check();
-
+        if ( ! $this->verify_nonce() ) { wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return; }
         $id = sanitize_key( $_POST['embed_id'] ?? '' );
-        DCB_Embeds::delete_embed( $id ); // removes from saved → falls back to default
+        DCB_Embeds::delete_embed( $id );
         wp_send_json_success();
     }
 
     public function ajax_embed_delete() {
-        $this->embed_nonce_check();
+        if ( ! $this->verify_nonce() ) { wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return; }
 
         $id       = sanitize_key( $_POST['embed_id'] ?? '' );
         $defaults = DCB_Embeds::default_embed_types();
 
         if ( isset( $defaults[ $id ] ) ) {
-            wp_send_json_error( array( 'message' => 'Cannot delete built-in embed types. Use "Disable" instead.' ) );
+            wp_send_json_error( array( 'message' => 'Standard-Typen können nicht gelöscht werden.' ) ); return;
         }
 
         DCB_Embeds::delete_embed( $id );
@@ -263,7 +481,7 @@ class DCB_Admin {
     }
 
     public function ajax_embed_create() {
-        $this->embed_nonce_check();
+        if ( ! $this->verify_nonce() ) { wp_send_json_error( array( 'message' => 'Nonce ungültig.' ), 403 ); return; }
 
         $id    = sanitize_key( $_POST['embed_id'] ?? '' );
         $label = sanitize_text_field( $_POST['label']    ?? '' );
@@ -271,12 +489,12 @@ class DCB_Admin {
         $icon  = sanitize_text_field( $_POST['icon']     ?? '▶' );
 
         if ( ! $id || ! $label ) {
-            wp_send_json_error( array( 'message' => 'ID and label are required.' ) );
+            wp_send_json_error( array( 'message' => 'ID und Bezeichnung sind erforderlich.' ) ); return;
         }
 
         $existing = DCB_Embeds::get_embeds();
         if ( isset( $existing[ $id ] ) ) {
-            wp_send_json_error( array( 'message' => 'An embed with this ID already exists.' ) );
+            wp_send_json_error( array( 'message' => 'Ein Embed mit dieser ID existiert bereits.' ) ); return;
         }
 
         $new_embed = array(
@@ -324,5 +542,10 @@ class DCB_Admin {
     public function render_consents_page() {
         $consents = DCB_Cookie_Manager::get_consents( 100 );
         include DCB_PLUGIN_DIR . 'admin/views/consents.php';
+    }
+
+    public function render_help_page() {
+        $settings = DCB_Cookie_Manager::get_settings();
+        include DCB_PLUGIN_DIR . 'admin/views/help.php';
     }
 }

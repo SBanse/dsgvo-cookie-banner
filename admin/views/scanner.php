@@ -12,15 +12,56 @@ $i        = 'DCB_I18n';
 
     <div class="dcb-scan-box">
         <button id="dcb-run-scan" class="button button-primary button-hero"><?php echo esc_html( $i::t('scan_start_btn') ); ?></button>
-        <span id="dcb-scan-status"></span>
         <?php if ( isset( $stored['last_scan'] ) ) : ?>
             <small style="display:block;margin-top:6px;color:#666"><?php echo esc_html( $i::t('last_scan') ); ?> <?php echo esc_html( $stored['last_scan'] ); ?></small>
         <?php endif; ?>
+
+        <!-- Scan-Fortschritt -->
+        <div id="dcb-scan-progress" style="display:none;margin-top:14px">
+            <div class="dcb-progress-track">
+                <div id="dcb-progress-bar" class="dcb-progress-fill" style="width:0%"></div>
+            </div>
+            <div id="dcb-scan-steps" style="margin-top:8px;font-size:12px;color:#555;line-height:1.7">
+                <div id="step-server"  class="dcb-step">⬜ Server-Scan (HTML aller Seiten + Datei-Scan)…</div>
+                <div id="step-browser" class="dcb-step">⬜ Browser-Scan (alle öffentlichen Seiten im Browser laden)…</div>
+                <div id="step-wait"    class="dcb-step">⬜ Scripts laden… <span id="dcb-countdown"></span></div>
+                <div id="step-match"   class="dcb-step">⬜ Cookies auswerten…</div>
+            </div>
+        </div>
+        <div id="dcb-scan-status" style="margin-top:10px;font-weight:600"></div>
     </div>
 
+    <!-- Unsichtbares iframe für Browser-Scan -->
+    <iframe id="dcb-scan-frame"
+            style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            aria-hidden="true"></iframe>
+
+    <?php
+    // Anzahl unvollständiger Einträge für den Header berechnen
+    $placeholders_hdr = array( '', '?', '-', '(Browser-Scan â bitte prÃ¼fen)' );
+    $incomplete_count = 0;
+    foreach ( $all as $entry ) {
+        if ( in_array( trim( $entry['provider'] ?? '' ), $placeholders_hdr, true )
+          || in_array( trim( $entry['purpose']  ?? '' ), $placeholders_hdr, true )
+          || in_array( trim( $entry['duration'] ?? '' ), $placeholders_hdr, true ) ) {
+            $incomplete_count++;
+        }
+    }
+    ?>
     <div class="dcb-table-header">
-        <h2 style="margin:0"><?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)</h2>
-        <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
+        <h2 style="margin:0">
+            <?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)
+            <?php if ( $incomplete_count > 0 ) : ?>
+                <span class="dcb-incomplete-count" id="dcb-incomplete-total" title="<?php echo esc_attr( $incomplete_count ); ?> EintrÃ¤ge mit fehlenden Angaben">â  <?php echo $incomplete_count; ?> unvollstÃ¤ndig</span>
+            <?php endif; ?>
+        </h2>
+        <div style="display:flex;gap:8px;align-items:center">
+            <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
+            <?php if ( ! empty( $auto ) ) : ?>
+                <button id="dcb-reset-scan" class="button button-secondary" style="color:#a00;border-color:#a00" title="Entfernt alle automatisch erkannten Einträge. Manuell hinzugefügte Cookies bleiben erhalten.">🗑 Auto-Liste zurücksetzen</button>
+            <?php endif; ?>
+        </div>
     </div>
 
     <?php if ( empty( $all ) ) : ?>
@@ -65,9 +106,19 @@ $i        = 'DCB_I18n';
             <tbody>
             <?php foreach ( $group as $k => $c ) :
                 $is_manual = isset( $manual[ $k ] );
+                // Unvollständig wenn Anbieter, Zweck oder Laufzeit fehlen oder Platzhalter-Werte enthalten
+                $placeholders = array( '', '?', '-', '(Browser-Scan â bitte prÃ¼fen)' );
+                $is_incomplete = in_array( trim( $c['provider'] ?? '' ), $placeholders, true )
+                              || in_array( trim( $c['purpose']  ?? '' ), $placeholders, true )
+                              || in_array( trim( $c['duration'] ?? '' ), $placeholders, true );
             ?>
-                <tr class="dcb-cookie-row" data-key="<?php echo esc_attr( $k ); ?>">
-                    <td class="dcb-view dcb-view-name"><code><?php echo esc_html( $c['name'] ); ?></code></td>
+                <tr class="dcb-cookie-row<?php echo $is_incomplete ? ' dcb-incomplete' : ''; ?>" data-key="<?php echo esc_attr( $k ); ?>" data-incomplete="<?php echo $is_incomplete ? '1' : '0'; ?>">
+                    <td class="dcb-view dcb-view-name">
+                        <?php if ( $is_incomplete ) : ?>
+                            <span class="dcb-incomplete-badge" title="Anbieter, Zweck oder Laufzeit fehlen â bitte ergÃ¤nzen">&#9888;</span>
+                        <?php endif; ?>
+                        <code><?php echo esc_html( $c['name'] ); ?></code>
+                    </td>
                     <td class="dcb-view dcb-view-provider"><?php echo esc_html( $c['provider'] ); ?></td>
                     <td class="dcb-view dcb-view-purpose"><?php echo esc_html( $c['purpose'] ); ?></td>
                     <td class="dcb-view dcb-view-duration"><?php echo esc_html( $c['duration'] ); ?></td>
@@ -78,7 +129,7 @@ $i        = 'DCB_I18n';
                     </td>
                     <td class="dcb-view"><?php echo $is_manual
                         ? '<span title="' . esc_attr( $i::t('source_manual') ) . '">✏️</span>'
-                        : '<span title="' . esc_attr( $i::t('source_auto') )   . '">🤖</span>'; ?>
+                        : '<span title="Automatisch erkannt' . ( ! empty( $c['_dcb_source'] ) ? ': ' . esc_attr( $c['_dcb_source'] ) : '' ) . '">🤖</span>'; ?>
                     </td>
                     <td class="dcb-view dcb-row-actions">
                         <button class="button button-small dcb-edit-btn"><?php echo esc_html( $i::t('btn_edit') ); ?></button>

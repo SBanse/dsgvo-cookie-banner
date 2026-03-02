@@ -3,7 +3,7 @@
  * Plugin Name: DSGVO Cookie Banner
  * Plugin URI:  https://github.com/sbanse/dsgvo-cookie-banner
  * Description: DSGVO/GDPR-konformer Cookie-Banner mit Scanner, Inline-Bearbeitung, Mehrsprachigkeit (DE/EN) und datenschutzkonformen Einbettungs-Platzhaltern für YouTube, Maps & Social Media.
- * Version:     1.2.0
+ * Version:     1.3.0
  * Author:      sbanse
  * License:     GPL-2.0+
  * Text Domain: dsgvo-cookie-banner
@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'DCB_VERSION',     '1.2.0' );
+define( 'DCB_VERSION',     '1.3.0' );
 define( 'DCB_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'DCB_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'DCB_PLUGIN_FILE', __FILE__ );
@@ -25,6 +25,18 @@ require_once DCB_PLUGIN_DIR . 'includes/class-embeds.php';
 require_once DCB_PLUGIN_DIR . 'includes/class-embed-shortcodes.php';
 require_once DCB_PLUGIN_DIR . 'admin/class-admin.php';
 require_once DCB_PLUGIN_DIR . 'public/class-frontend.php';
+
+// Elementor-Widgets (nur laden wenn Elementor aktiv ist)
+if ( did_action( 'elementor/loaded' ) || defined( 'ELEMENTOR_VERSION' ) ) {
+    require_once DCB_PLUGIN_DIR . 'elementor/class-elementor-integration.php';
+    DCB_Elementor_Integration::init();
+} else {
+    // Fallback: auf elementor/loaded warten (falls Plugin-Reihenfolge variiert)
+    add_action( 'elementor/loaded', function () {
+        require_once DCB_PLUGIN_DIR . 'elementor/class-elementor-integration.php';
+        DCB_Elementor_Integration::init();
+    } );
+}
 
 register_activation_hook( __FILE__,   array( 'DCB_Cookie_Manager', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'DCB_Cookie_Manager', 'deactivate' ) );

@@ -14,7 +14,6 @@ $i    = 'DCB_I18n'; // shorthand
             <button type="button" class="dcb-tab" data-tab="categories">🗂️ <?php echo esc_html( $i::t('tab_categories') ); ?></button>
             <button type="button" class="dcb-tab" data-tab="advanced"><?php echo esc_html( $i::t('tab_advanced') ); ?></button>
             <button type="button" class="dcb-tab dcb-tab-lang" data-tab="language">🌐 <?php echo esc_html( $i::t('tab_language') ); ?></button>
-            <button type="button" class="dcb-tab" data-tab="help"><?php echo esc_html( $i::t('tab_help') ); ?></button>
         </div>
 
         <!-- Banner Text -->
@@ -192,26 +191,6 @@ $i    = 'DCB_I18n'; // shorthand
         </div>
 
         <!-- Help -->
-        <div class="dcb-tab-content" id="tab-help">
-            <h3><?php echo esc_html( $i::t('help_shortcodes_title') ); ?></h3>
-            <table class="widefat">
-                <tr><td><code>[dcb_cookie_list]</code></td><td><?php echo esc_html( $i::t('help_shortcode_list_desc') ); ?></td></tr>
-                <tr><td><code>[dcb_cookie_list category="statistics"]</code></td><td><?php echo esc_html( $i::t('help_shortcode_cat_desc') ); ?></td></tr>
-                <tr><td><code>[dcb_privacy_settings]</code></td><td><?php echo esc_html( $i::t('help_shortcode_btn_desc') ); ?></td></tr>
-            </table>
-            <h3><?php echo esc_html( $i::t('help_privacy_title') ); ?></h3>
-            <p><?php echo esc_html( $i::t('help_privacy_text') ); ?></p>
-            <h3><?php echo esc_html( $i::t('help_compliance_title') ); ?></h3>
-            <ul style="list-style:disc;padding-left:20px">
-                <li>✅ <?php echo esc_html( $i::t('help_check_1') ); ?></li>
-                <li>✅ <?php echo esc_html( $i::t('help_check_2') ); ?></li>
-                <li>✅ <?php echo esc_html( $i::t('help_check_3') ); ?></li>
-                <li>✅ <?php echo esc_html( $i::t('help_check_4') ); ?></li>
-                <li>✅ <?php echo esc_html( $i::t('help_check_5') ); ?></li>
-                <li>✅ <?php echo esc_html( $i::t('help_check_6') ); ?></li>
-            </ul>
-        </div>
-
         <?php submit_button( $i::t('save_changes') ); ?>
     </form>
 </div>

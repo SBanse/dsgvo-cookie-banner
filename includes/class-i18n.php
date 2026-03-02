@@ -39,7 +39,7 @@ class DCB_I18n {
         } else {
             // WordPress-Locale als Fallback
             $locale = get_locale();
-            self::$lang = str_starts_with( $locale, 'de' ) ? 'de' : 'en';
+            self::$lang = strpos( $locale, 'de' ) === 0 ? 'de' : 'en';
         }
 
         self::$strings = self::load( self::$lang );
@@ -112,6 +112,7 @@ class DCB_I18n {
             'admin_submenu_settings'    => 'Einstellungen',
             'admin_submenu_scanner'     => 'Cookie-Verwaltung',
             'admin_submenu_consents'    => 'Einwilligungen',
+            'admin_submenu_help'        => 'Hilfe',
             'save_changes'              => 'Änderungen speichern',
 
             // ── Admin: Einstellungs-Tabs ─────────────────────────────────────
@@ -174,22 +175,49 @@ class DCB_I18n {
             'lang_en'                   => 'English',
 
             // ── Admin: Hilfe Tab ─────────────────────────────────────────────
-            'help_shortcodes_title'     => 'Shortcodes',
-            'help_shortcode_list_desc'  => 'Vollständige Cookie-Tabelle ausgeben (für Datenschutzerklärung / Impressum)',
-            'help_shortcode_cat_desc'   => 'Nur Statistik-Cookies anzeigen',
-            'help_shortcode_btn_desc'   => 'Button zum Öffnen der Cookie-Einstellungen',
-            'help_privacy_title'        => 'Einbindung in Datenschutzerklärung',
-            'help_privacy_text'         => 'Fügen Sie auf Ihrer Datenschutzseite den Shortcode [dcb_cookie_list] ein. Die Liste wird automatisch aus dem letzten Scan befüllt.',
-            'help_compliance_title'     => 'DSGVO-Compliance Checkliste',
-            'help_check_1'              => 'Kein Pre-Ticking (kein Standard-Häkchen außer „Notwendig")',
-            'help_check_2'              => 'Granulare Kategorien (nicht nur „Alle akzeptieren")',
-            'help_check_3'              => 'Einwilligungsprotokoll mit IP-Hash und Zeitstempel',
-            'help_check_4'              => 'Widerruf jederzeit möglich via [dcb_privacy_settings]',
-            'help_check_5'              => 'Link zur Datenschutzerklärung im Banner',
-            'help_check_6'              => 'Keine Ablehnung erschwert (gleichwertige Buttons)',
+            'help_scanner_title'         => '🔍 Cookie-Scanner',
+            'help_scanner_intro'         => 'Der Scanner analysiert Ihre Website auf zwei Wegen und liefert nur Cookies, die tatsächlich eingebunden sind – keine Falsch-Positiven aus Plugin-Listen.',
+            'help_scanner_phase1'        => 'Server-Scan: Jede veröffentlichte Seite und jeder Beitrag wird per HTTP-Request abgerufen. Set-Cookie-Header, Script-URLs, Inline-Scripts und Embeds werden gegen eine Datenbank von über 100 bekannten Cookies abgeglichen.',
+            'help_scanner_phase2'        => 'Browser-Scan: Ein unsichtbares iframe lädt jede öffentliche Seite im Browser des Admins. Nach 5 Sekunden (genug Zeit für Drittanbieter-Scripts) werden alle tatsächlich gesetzten document.cookie-Werte gemeldet und abgeglichen.',
+            'help_scanner_incomplete'    => 'Einträge mit ⚠-Badge sind unvollständig: Anbieter, Zweck oder Laufzeit fehlen. Diese müssen ergänzt werden, bevor die Datenschutzerklärung rechtskonform ist.',
+            'help_scanner_reset'         => 'Der Button „Auto-Liste zurücksetzen" entfernt alle automatisch erkannten Einträge. Manuell hinzugefügte Cookies bleiben erhalten. Danach kann ein neuer Scan gestartet werden.',
+            'help_scanner_source'        => 'Das 🤖-Icon zeigt im Tooltip die genaue Quelle: z. B. „HTML:/shop/" bedeutet, der Cookie-Hinweis wurde im Quellcode der Shop-Seite gefunden.',
+            'help_shortcodes_title'      => '📋 Shortcodes',
+            'help_shortcode_list_desc'   => 'Vollständige Cookie-Tabelle ausgeben (für Datenschutzerklärung)',
+            'help_shortcode_cat_desc'    => 'Nur Cookies einer Kategorie anzeigen, z. B. category="statistics"',
+            'help_shortcode_btn_desc'    => 'Button zum Öffnen der Cookie-Einstellungen (mit optionalem text="")',
+            'help_shortcode_banner_desc' => 'Banner-Link mit eigenem Text anzeigen',
+
+            'help_embeds_title'          => '🖼️ Einbettungs-Platzhalter',
+            'help_embeds_intro'          => 'Ersetzen Sie iFrames durch DSGVO-konforme Platzhalter. Inhalte werden erst nach Einwilligung geladen. Platzhalter-Texte und Farben sind unter Einstellungen → Einbettungen anpassbar.',
+            'help_embed_note'            => 'Alle Typen unterstützen width="" und height="". Eigene Typen können unter Einbettungen erstellt werden.',
+
+            'help_blocking_title'        => '🔒 Script-Blocking',
+            'help_blocking_intro'        => 'Externe Scripts erst nach Einwilligung laden: type auf text/plain setzen und data-dcb-category ergänzen.',
+            'help_blocking_cats'         => 'Verfügbare Kategorien: necessary, statistics, marketing, preferences (oder Ihr eigener block_key)',
+
+            'help_categories_title'      => '🗂️ Kategorien & Schlüssel',
+            'help_categories_intro'      => 'Unter Einstellungen → Kategorien können Sie Bezeichnung, Beschreibung, Shortcode-Schlüssel und Blockierungs-Schlüssel jeder Kategorie frei anpassen.',
+
+            'help_event_title'           => '⚡ JavaScript-Event',
+            'help_event_intro'           => 'Nach jeder Einwilligung feuert das Plugin das Event dcb:consent auf document. Damit können Sie eigene Scripts reaktiv laden.',
+
+            'help_privacy_title'         => '📄 Datenschutzerklärung',
+            'help_privacy_text'          => 'Fügen Sie [dcb_cookie_list] in Ihre Datenschutzseite ein. Die Tabelle füllt sich automatisch aus dem letzten Scanner-Ergebnis und zeigt Name, Anbieter, Zweck und Laufzeit.',
+
+            'help_compliance_title'      => '✅ DSGVO-Compliance Checkliste',
+            'help_check_1'               => 'Kein Pre-Ticking – nur Notwendige sind vorausgewählt',
+            'help_check_2'               => 'Granulare Kategorien – kein reines „Alle akzeptieren"',
+            'help_check_3'               => 'Einwilligungsprotokoll mit IP-Hash und Zeitstempel',
+            'help_check_4'               => 'Widerruf jederzeit möglich via [dcb_privacy_settings]',
+            'help_check_5'               => 'Link zur Datenschutzerklärung im Banner',
+            'help_check_6'               => 'Gleichwertige Buttons – kein Dark Pattern',
+            'help_check_7'               => 'Script-Blocking verhindert vorzeitiges Laden',
+            'help_check_8'               => 'Embed-Platzhalter für Drittanbieter-Inhalte',
+            'help_check_9'               => 'Alle Cookie-Einträge vollständig (Anbieter, Zweck, Laufzeit ausgefüllt)',
 
             // ── Admin: Scanner ───────────────────────────────────────────────
-            'scanner_intro'             => 'Scannt Ihre WordPress-Installation auf verwendete Cookies. Alle Felder können direkt in der Tabelle bearbeitet werden – klicken Sie dazu auf den ✏️-Button.',
+            'scanner_intro'             => 'Scannt alle öffentlichen Seiten und Beiträge Ihrer WordPress-Installation auf verwendete Cookies (Server-Scan + Browser-Scan). Rot/orange markierte Einträge sind unvollständig – klicken Sie auf ✏️ um Anbieter, Zweck und Laufzeit zu ergänzen.',
             'scan_start_btn'            => '🔍 Scan starten',
             'scan_running'              => '⏳ Scanne…',
             'scan_done'                 => '✅ %d Cookies gefunden. Seite wird neu geladen…',
@@ -285,6 +313,7 @@ class DCB_I18n {
             'admin_submenu_settings'    => 'Settings',
             'admin_submenu_scanner'     => 'Cookie Management',
             'admin_submenu_consents'    => 'Consents',
+            'admin_submenu_help'        => 'Help',
             'save_changes'              => 'Save Changes',
 
             // ── Admin: Settings tabs ─────────────────────────────────────────
@@ -347,22 +376,49 @@ class DCB_I18n {
             'lang_en'                   => 'English',
 
             // ── Admin: Help tab ──────────────────────────────────────────────
-            'help_shortcodes_title'     => 'Shortcodes',
-            'help_shortcode_list_desc'  => 'Output full cookie table (for Privacy Policy / Imprint)',
-            'help_shortcode_cat_desc'   => 'Show only statistics cookies',
-            'help_shortcode_btn_desc'   => 'Button to reopen cookie settings',
-            'help_privacy_title'        => 'Adding to Privacy Policy',
-            'help_privacy_text'         => 'Add the shortcode [dcb_cookie_list] to your Privacy Policy page. The list is automatically populated from the last scan.',
-            'help_compliance_title'     => 'GDPR Compliance Checklist',
-            'help_check_1'              => 'No pre-ticking (no default checkmarks except "Necessary")',
-            'help_check_2'              => 'Granular categories (not just "Accept All")',
-            'help_check_3'              => 'Consent log with IP hash and timestamp',
-            'help_check_4'              => 'Revocable at any time via [dcb_privacy_settings]',
-            'help_check_5'              => 'Link to Privacy Policy in banner',
-            'help_check_6'              => 'Declining not made harder (equal-weight buttons)',
+            'help_scanner_title'         => '🔍 Cookie Scanner',
+            'help_scanner_intro'         => 'The scanner analyses your website in two stages and only reports cookies that are actually present – no false positives from plugin lists.',
+            'help_scanner_phase1'        => 'Server scan: every published page and post is fetched via HTTP. Set-Cookie headers, script URLs, inline scripts and embeds are matched against a database of 100+ known cookies.',
+            'help_scanner_phase2'        => 'Browser scan: a hidden iframe loads each public page in the admin\'s browser. After 5 seconds (enough time for third-party scripts to execute) all document.cookie values are reported and matched.',
+            'help_scanner_incomplete'    => 'Entries with a ⚠ badge are incomplete: provider, purpose or duration is missing. These must be filled in before your Privacy Policy is fully compliant.',
+            'help_scanner_reset'         => 'The "Reset auto list" button removes all automatically detected entries. Manually added cookies are preserved. You can then run a fresh scan.',
+            'help_scanner_source'        => 'The 🤖 icon shows the exact detection source in its tooltip, e.g. "HTML:/shop/" means the cookie hint was found in the source code of the shop page.',
+            'help_shortcodes_title'      => '📋 Shortcodes',
+            'help_shortcode_list_desc'   => 'Output full cookie table (for Privacy Policy)',
+            'help_shortcode_cat_desc'    => 'Show only one category, e.g. category="statistics"',
+            'help_shortcode_btn_desc'    => 'Button to reopen cookie settings (optional text="")',
+            'help_shortcode_banner_desc' => 'Display banner link with custom text',
+
+            'help_embeds_title'          => '🖼️ Embed Placeholders',
+            'help_embeds_intro'          => 'Replace iFrames with GDPR-compliant placeholders. Content is only loaded after consent. Placeholder texts and colours are editable under Settings → Embeds.',
+            'help_embed_note'            => 'All types support width="" and height="". Custom types can be created under Embeds.',
+
+            'help_blocking_title'        => '🔒 Script Blocking',
+            'help_blocking_intro'        => 'Load external scripts only after consent: set type to text/plain and add data-dcb-category.',
+            'help_blocking_cats'         => 'Available categories: necessary, statistics, marketing, preferences (or your custom block_key)',
+
+            'help_categories_title'      => '🗂️ Categories & Keys',
+            'help_categories_intro'      => 'Under Settings → Categories you can freely customise the label, description, shortcode key and blocking key for each category.',
+
+            'help_event_title'           => '⚡ JavaScript Event',
+            'help_event_intro'           => 'After every consent decision the plugin fires the dcb:consent event on document. Use this to reactively load your own scripts.',
+
+            'help_privacy_title'         => '📄 Privacy Policy',
+            'help_privacy_text'          => 'Add [dcb_cookie_list] to your Privacy Policy page. The table is automatically populated from the last scanner result, showing name, provider, purpose and duration.',
+
+            'help_compliance_title'      => '✅ GDPR Compliance Checklist',
+            'help_check_1'               => 'No pre-ticking – only Necessary checked by default',
+            'help_check_2'               => 'Granular categories – no pure "Accept All"',
+            'help_check_3'               => 'Consent log with IP hash and timestamp',
+            'help_check_4'               => 'Revocable at any time via [dcb_privacy_settings]',
+            'help_check_5'               => 'Privacy Policy link in banner',
+            'help_check_6'               => 'Equal-weight buttons – no dark pattern',
+            'help_check_7'               => 'Script blocking prevents premature loading',
+            'help_check_8'               => 'Embed placeholders for third-party content',
+            'help_check_9'               => 'All cookie entries complete (provider, purpose and duration filled in)',
 
             // ── Admin: Scanner ───────────────────────────────────────────────
-            'scanner_intro'             => 'Scans your WordPress installation for cookies in use. All fields can be edited directly in the table – click the ✏️ button in the relevant row.',
+            'scanner_intro'             => 'Scans all public pages and posts of your WordPress installation for cookies (server scan + browser scan). Entries marked orange/red are incomplete – click ✏️ to add provider, purpose and duration.',
             'scan_start_btn'            => '🔍 Start Scan',
             'scan_running'              => '⏳ Scanning…',
             'scan_done'                 => '✅ %d cookies found. Reloading page…',

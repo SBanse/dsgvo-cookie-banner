@@ -37,7 +37,7 @@ class DCB_Cookie_Manager {
     public static function default_settings() {
         // Detect locale for initial language default
         $locale   = get_locale();
-        $lang     = str_starts_with( $locale, 'de' ) ? 'de' : 'en';
+        $lang     = strpos( $locale, 'de' ) === 0 ? 'de' : 'en';
 
         // Translated defaults – i18n may not be initialised yet at activation,
         // so we inline a tiny lookup here.

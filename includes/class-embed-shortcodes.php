@@ -191,7 +191,7 @@ class DCB_Embed_Shortcodes {
             'data-dcb-always-cookie'=> esc_attr( $always_cookie ),
         );
         $data_str = implode( ' ', array_map(
-            fn($k,$v) => $k . '="' . $v . '"',
+            function( $k, $v ) { return $k . '="' . $v . '"'; },
             array_keys($data), $data
         ) );
 
@@ -245,12 +245,12 @@ class DCB_Embed_Shortcodes {
         $height_css = is_numeric( $height ) ? $height . 'px' : $height;
 
         // Special: Instagram/Twitter use their own embed scripts
-        if ( str_starts_with( $src, '__instagram__' ) ) {
+        if ( strpos( $src, '__instagram__' ) === 0 ) {
             $url = substr( $src, 13 );
             return '<blockquote class="instagram-media" data-instgrm-permalink="' . esc_url( $url ) . '"></blockquote>'
                  . '<script async src="//www.instagram.com/embed.js"></script>';
         }
-        if ( str_starts_with( $src, '__twitter__' ) ) {
+        if ( strpos( $src, '__twitter__' ) === 0 ) {
             $url = substr( $src, 11 );
             return '<blockquote class="twitter-tweet"><a href="' . esc_url( $url ) . '"></a></blockquote>'
                  . '<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>';
