@@ -264,3 +264,23 @@
     color: #555;
     padding: 12px 18px;
 }
+
+/* ── Scanner Fortschritt ───────────────────────────────────────────── */
+.dcb-progress-track {
+    background: #e0e0e0;
+    border-radius: 6px;
+    height: 8px;
+    width: 340px;
+    max-width: 100%;
+    overflow: hidden;
+}
+.dcb-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1, #72aee6);
+    border-radius: 6px;
+    transition: width 0.4s ease;
+}
+.dcb-step { transition: color 0.2s; }
+.dcb-step.done   { color: #1a7a1a; }
+.dcb-step.active { color: #0073aa; font-weight: 600; }
+.dcb-step.error  { color: #cc1818; }

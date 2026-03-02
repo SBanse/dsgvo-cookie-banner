@@ -12,64 +12,181 @@ jQuery(function ($) {
     });
 
     /* ── Cookie Scan ── */
+    /* ── Cookie-Scan (zweiphasig: Server + Browser) ── */
+    var dcbScanOrigin = window.location.origin;
+    var dcbBrowserCookies = [];
+    var dcbBrowserDone    = false;
+
+    function dcbSetStep(id, state, text) {
+        var $el = $('#' + id);
+        $el.removeClass('active done error');
+        if (state === 'active') $el.addClass('active').html('🔄 ' + (text || $el.text().replace(/^[^ ]+ /, '')));
+        if (state === 'done')   $el.addClass('done').html('✅ ' + (text || $el.text().replace(/^[^ ]+ /, '')));
+        if (state === 'error')  $el.addClass('error').html('⚠️ ' + (text || $el.text().replace(/^[^ ]+ /, '')));
+    }
+    function dcbProgress(pct) {
+        $('#dcb-progress-bar').css('width', pct + '%');
+    }
+
+    // postMessage-Listener: empfängt Cookies vom Scan-iframe
+    window.addEventListener('message', function(e) {
+        if (!e.data || !e.data.dcb_scan) return;
+        // Alle gemeldeten Cookies sammeln (3 Meldungen: 0.5s, 5s, 8s)
+        if (Array.isArray(e.data.cookies)) {
+            e.data.cookies.forEach(function(c) {
+                if (dcbBrowserCookies.indexOf(c) === -1) dcbBrowserCookies.push(c);
+            });
+        }
+    });
+
     $('#dcb-run-scan').on('click', function () {
-        var $btn = $(this);
-        $('#dcb-scan-status').text(__('scan_running'));
+        var $btn    = $(this);
+        var $status = $('#dcb-scan-status');
         $btn.prop('disabled', true);
+        dcbBrowserCookies = [];
+        dcbBrowserDone    = false;
+
+        $('#dcb-scan-progress').show();
+        $status.css('color','').text('');
+        dcbProgress(0);
+        ['step-server','step-browser','step-wait','step-match'].forEach(function(id) {
+            $('#'+id).removeClass('active done error');
+        });
+
+        // ─ Phase 1: Server-Scan ─────────────────────────────────────────────
+        dcbSetStep('step-server', 'active', 'Server-Scan läuft (Plugins, Dateien, Options)…');
+        dcbProgress(10);
 
         $.ajax({
-            url:  DCBAdmin.ajax_url,
-            type: 'POST',
-            data: { action: 'dcb_scan', nonce: DCBAdmin.nonce },
-            success: function (raw) {
+            url:     DCBAdmin.ajax_url,
+            type:    'POST',
+            timeout: 25000,
+            data:    { action: 'dcb_scan', nonce: DCBAdmin.nonce },
+            success: function(raw) {
                 var res;
-                try { res = (typeof raw === 'object') ? raw : JSON.parse(raw); }
+                try { res = typeof raw === 'object' ? raw : JSON.parse(raw); }
                 catch(e) {
-                    // Manchmal steht PHP-Output vor dem JSON – JSON-Teil extrahieren
-                    var jsonStart = typeof raw === 'string' ? raw.indexOf('{"') : -1;
-                    if (jsonStart > 0) {
-                        try { res = JSON.parse(raw.substring(jsonStart)); } catch(e2) {}
-                    }
-                    if (!res) {
-                        $('#dcb-scan-status').css('color','red').text('❌ Ungültige Server-Antwort');
-                        console.error('[DCB Scan] Keine JSON-Antwort:', typeof raw === 'string' ? raw.substring(0,300) : raw);
-                        $btn.prop('disabled', false); return;
-                    }
+                    var idx = typeof raw === 'string' ? raw.indexOf('{"') : -1;
+                    if (idx >= 0) try { res = JSON.parse(raw.substring(idx)); } catch(e2) {}
                 }
                 if (res && res.success) {
-                    var msg = __('scan_done').replace('%d', res.data.count);
-                    $('#dcb-scan-status').css('color','green').text(msg);
-                    setTimeout(function () { location.reload(); }, 1200);
+                    dcbSetStep('step-server', 'done', 'Server-Scan: ' + res.data.count + ' Einträge');
                 } else {
-                    var errMsg = (res && res.data && res.data.message) ? res.data.message : __('scan_error');
-                    $('#dcb-scan-status').css('color','red').text('❌ ' + errMsg);
-                    console.error('[DCB Scan] Server-Fehler:', res);
-                    $btn.prop('disabled', false);
+                    dcbSetStep('step-server', 'error', 'Server-Scan fehlgeschlagen');
                 }
+                dcbProgress(25);
+                startBrowserScan($btn, $status);
             },
-            error: function (xhr, status, err) {
-                // Prüfen ob trotz Fehler-Status valides JSON in der Antwort steckt
-                var raw = xhr.responseText || '';
-                var res = null;
-                var jsonStart = raw.indexOf('{"');
-                if (jsonStart >= 0) {
-                    try { res = JSON.parse(raw.substring(jsonStart)); } catch(e) {}
-                }
-                if (res && res.success) {
-                    // Scan hat funktioniert – der "Fehler" war nur schmutziger Output davor
-                    var msg = __('scan_done').replace('%d', res.data.count);
-                    $('#dcb-scan-status').css('color','green').text(msg);
-                    setTimeout(function () { location.reload(); }, 1200);
-                    return;
-                }
-                var errMsg = res && res.data && res.data.message ? res.data.message : ('Verbindungsfehler (' + status + ')');
-                $('#dcb-scan-status').css('color','red').text('❌ ' + errMsg);
-                console.error('[DCB Scan] AJAX-Fehler:', status, err);
-                console.error('[DCB Scan] Server-Antwort:', raw.substring(0, 300));
-                $btn.prop('disabled', false);
+            error: function(xhr, status) {
+                dcbSetStep('step-server', 'error', 'Server-Scan: ' + status);
+                dcbProgress(25);
+                startBrowserScan($btn, $status); // trotzdem weiter
             }
         });
     });
+
+    // ─ Phase 2: Browser-Scan ────────────────────────────────────────────────
+    function startBrowserScan($btn, $status) {
+        dcbSetStep('step-browser', 'active', 'Browser-Scan: Scan-URL wird generiert…');
+        dcbProgress(30);
+
+        $.ajax({
+            url:     DCBAdmin.ajax_url,
+            type:    'POST',
+            timeout: 10000,
+            data:    { action: 'dcb_get_scan_url', nonce: DCBAdmin.nonce },
+            success: function(res) {
+                if (!res || !res.success) {
+                    dcbSetStep('step-browser', 'error', 'Scan-URL nicht verfügbar');
+                    dcbProgress(100);
+                    finishScan($btn, $status, false);
+                    return;
+                }
+                var scanUrl = res.data.url;
+                dcbSetStep('step-browser', 'active', 'Seite wird im Hintergrund geladen…');
+                dcbProgress(40);
+
+                // iframe beladen
+                var $frame = $('#dcb-scan-frame');
+                $frame.attr('src', scanUrl);
+
+                // Countdown
+                dcbSetStep('step-wait', 'active', 'Drittanbieter-Scripts laden <span id="dcb-countdown">8</span>s…');
+                dcbProgress(50);
+                var seconds = 8;
+                var countdownInterval = setInterval(function() {
+                    seconds--;
+                    $('#dcb-countdown').text(Math.max(0, seconds));
+                    dcbProgress(50 + Math.round((8 - seconds) / 8 * 30));
+                    if (seconds <= 0) clearInterval(countdownInterval);
+                }, 1000);
+
+                // Nach 8.5s Cookies einsammeln und ans Backend schicken
+                setTimeout(function() {
+                    clearInterval(countdownInterval);
+                    $frame.attr('src', 'about:blank'); // iframe entladen
+                    dcbSetStep('step-browser', 'done', 'Browser-Scan abgeschlossen (' + dcbBrowserCookies.length + ' Cookies erkannt)');
+                    dcbSetStep('step-wait', 'done', 'Wartezeit abgeschlossen');
+                    dcbProgress(82);
+                    submitBrowserCookies($btn, $status);
+                }, 8500);
+            },
+            error: function() {
+                dcbSetStep('step-browser', 'error', 'Browser-Scan: Verbindungsfehler');
+                dcbProgress(100);
+                finishScan($btn, $status, false);
+            }
+        });
+    }
+
+    // ─ Phase 3: Browser-Cookies ans Backend schicken ─────────────────────────
+    function submitBrowserCookies($btn, $status) {
+        dcbSetStep('step-match', 'active', 'Cookies werden ausgewertet…');
+        dcbProgress(88);
+
+        $.ajax({
+            url:     DCBAdmin.ajax_url,
+            type:    'POST',
+            timeout: 15000,
+            data:    {
+                action:  'dcb_browser_scan',
+                nonce:   DCBAdmin.nonce,
+                cookies: dcbBrowserCookies.join(','),
+                ls_keys: ''
+            },
+            success: function(res) {
+                if (res && res.success) {
+                    var d = res.data;
+                    var details = d.matched + ' erkannt, ' + d.unknown + ' unbekannt';
+                    dcbSetStep('step-match', 'done', 'Ergebnis: ' + d.total + ' Cookies (' + details + ')');
+                    dcbProgress(100);
+                    $status.css('color', 'green').html(
+                        '✅ Scan abgeschlossen: <strong>' + d.total + ' Cookies</strong> gefunden' +
+                        (d.unknown > 0 ? ' (' + d.unknown + ' unbekannte bitte prüfen)' : '')
+                    );
+                    setTimeout(function() { location.reload(); }, 2200);
+                } else {
+                    dcbSetStep('step-match', 'error', 'Auswertung fehlgeschlagen');
+                    dcbProgress(100);
+                    finishScan($btn, $status, false);
+                }
+            },
+            error: function() {
+                dcbSetStep('step-match', 'error', 'Verbindungsfehler bei Auswertung');
+                dcbProgress(100);
+                finishScan($btn, $status, false);
+            }
+        });
+    }
+
+    function finishScan($btn, $status, success) {
+        if (!success) {
+            $status.css('color', 'orange').text('⚠️ Scan teilweise abgeschlossen. Seite wird neu geladen…');
+            setTimeout(function() { location.reload(); }, 2000);
+        }
+        $btn.prop('disabled', false);
+    }
+
 
     /* ── Inline Edit: Open ── */
     $(document).on('click', '.dcb-edit-btn', function () {

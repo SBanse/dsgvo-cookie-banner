@@ -12,11 +12,30 @@ $i        = 'DCB_I18n';
 
     <div class="dcb-scan-box">
         <button id="dcb-run-scan" class="button button-primary button-hero"><?php echo esc_html( $i::t('scan_start_btn') ); ?></button>
-        <span id="dcb-scan-status"></span>
         <?php if ( isset( $stored['last_scan'] ) ) : ?>
             <small style="display:block;margin-top:6px;color:#666"><?php echo esc_html( $i::t('last_scan') ); ?> <?php echo esc_html( $stored['last_scan'] ); ?></small>
         <?php endif; ?>
+
+        <!-- Scan-Fortschritt -->
+        <div id="dcb-scan-progress" style="display:none;margin-top:14px">
+            <div class="dcb-progress-track">
+                <div id="dcb-progress-bar" class="dcb-progress-fill" style="width:0%"></div>
+            </div>
+            <div id="dcb-scan-steps" style="margin-top:8px;font-size:12px;color:#555;line-height:1.7">
+                <div id="step-server"  class="dcb-step">⬜ Server-Scan (Plugins, Dateien, Options)…</div>
+                <div id="step-browser" class="dcb-step">⬜ Browser-Scan (echte Cookies im Browser laden)…</div>
+                <div id="step-wait"    class="dcb-step">⬜ Drittanbieter-Scripts laden <span id="dcb-countdown">8</span>s…</div>
+                <div id="step-match"   class="dcb-step">⬜ Cookies auswerten…</div>
+            </div>
+        </div>
+        <div id="dcb-scan-status" style="margin-top:10px;font-weight:600"></div>
     </div>
+
+    <!-- Unsichtbares iframe für Browser-Scan -->
+    <iframe id="dcb-scan-frame"
+            style="position:absolute;width:1px;height:1px;left:-9999px;top:-9999px;border:0"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            aria-hidden="true"></iframe>
 
     <div class="dcb-table-header">
         <h2 style="margin:0"><?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)</h2>

@@ -13,6 +13,8 @@ class DCB_Admin {
 
         // Cookie AJAX
         add_action( 'wp_ajax_dcb_scan',              array( $this, 'ajax_scan' ) );
+        add_action( 'wp_ajax_dcb_browser_scan',      array( $this, 'ajax_browser_scan' ) );
+        add_action( 'wp_ajax_dcb_get_scan_url',      array( $this, 'ajax_get_scan_url' ) );
         add_action( 'wp_ajax_dcb_save_manual_cookie', array( $this, 'ajax_save_manual' ) );
         add_action( 'wp_ajax_dcb_update_cookie',     array( $this, 'ajax_update_cookie' ) );
         add_action( 'wp_ajax_dcb_delete_cookie',     array( $this, 'ajax_delete_cookie' ) );
@@ -188,14 +190,137 @@ class DCB_Admin {
         }
 
         try {
+            $before  = count( DCB_Cookie_Manager::get_detected_cookies()['auto'] ?? array() );
             $cookies = DCB_Cookie_Scanner::scan();
+            $after   = count( $cookies );
+            $new     = max( 0, $after - $before );
+
             wp_send_json_success( array(
-                'count'   => count( $cookies ),
+                'count'   => $after,
+                'new'     => $new,
                 'cookies' => array_values( $cookies ),
             ) );
         } catch ( \Throwable $e ) {
             wp_send_json_error( array( 'message' => 'Scanner-Fehler: ' . $e->getMessage() ) );
         }
+    }
+
+    /**
+     * Erzeugt ein einmalig gültiges Token und gibt die Scan-URL zurück.
+     * Das Token ist 60 Sekunden gültig (Transient).
+     */
+    public function ajax_get_scan_url() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ) ); return;
+        }
+
+        $token = wp_generate_password( 32, false );
+        set_transient( 'dcb_scan_token_' . $token, 1, 60 ); // 60s gültig
+
+        $url = add_query_arg( 'dcb_browser_scan', $token, home_url( '/' ) );
+        wp_send_json_success( array(
+            'url'   => $url,
+            'token' => $token,
+        ) );
+    }
+
+    /**
+     * Empfängt die vom Browser gemeldeten Cookie-Namen (via postMessage → AJAX),
+     * gleicht sie gegen die Datenbank ab und speichert Treffer + Unbekannte.
+     */
+    public function ajax_browser_scan() {
+        while ( ob_get_level() > 0 ) { ob_end_clean(); }
+        if ( ! wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' ) || ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( array( 'message' => 'Nonce ungültig.' ) ); return;
+        }
+
+        $raw_cookies = $_POST['cookies'] ?? '';
+        $raw_ls      = $_POST['ls_keys'] ?? '';
+
+        // Komma-getrennte Liste bereinigen
+        $cookie_names = array_filter( array_map( 'sanitize_text_field', explode( ',', $raw_cookies ) ) );
+        $ls_keys      = array_filter( array_map( 'sanitize_text_field', explode( ',', $raw_ls ) ) );
+
+        if ( empty( $cookie_names ) ) {
+            wp_send_json_error( array( 'message' => 'Keine Cookie-Namen empfangen.' ) ); return;
+        }
+
+        $known   = DCB_Cookie_Scanner::known_cookies();
+        $stored  = DCB_Cookie_Manager::get_detected_cookies();
+        $manual  = $stored['manual'] ?? array();
+        $auto    = $stored['auto']   ?? array();
+        $manual_keys = array_keys( $manual );
+
+        $matched   = array(); // Cookies aus Datenbank erkannt
+        $unknown   = array(); // Unbekannte Cookies — trotzdem eintragen
+
+        foreach ( $cookie_names as $cn ) {
+            $found_key = false;
+
+            // Exakter Treffer
+            foreach ( $known as $key => $data ) {
+                if ( in_array( $key, $manual_keys, true ) ) continue;
+
+                $match = $data['match'] ?? '';
+                $match_hit = false;
+
+                if ( $match === '' ) {
+                    // Exakter Name (Wildcards im Namen ignorieren → Prefix-Vergleich)
+                    $clean = str_replace( array('*','.'), '', $data['name'] );
+                    $match_hit = ( $cn === $clean || $cn === $data['name'] || strpos( $cn, rtrim($clean,'-_') ) === 0 );
+                } elseif ( strpos( $match, 'prefix:' ) === 0 ) {
+                    $prefix = substr( $match, 7 );
+                    $match_hit = ( strpos( $cn, $prefix ) === 0 );
+                }
+
+                if ( $match_hit ) {
+                    if ( ! isset( $auto[ $key ] ) && ! isset( $matched[ $key ] ) ) {
+                        $matched[ $key ] = $data;
+                    }
+                    $found_key = true;
+                    break;
+                }
+            }
+
+            // Unbekannter Cookie → als "Unbekannt / Notwendig" eintragen
+            // damit der Admin es sehen und kategorisieren kann
+            if ( ! $found_key ) {
+                // Interne/Browser/WordPress-Cookies überspringen
+                $skip_prefixes = array( 'wordpress_', 'wp-', 'dcb_', '__utmz_', 'PHPSESSID', '_wpnonce', 'comment_' );
+                $skip = false;
+                foreach ( $skip_prefixes as $sp ) {
+                    if ( strpos( $cn, $sp ) === 0 ) { $skip = true; break; }
+                }
+                if ( ! $skip && strlen( $cn ) > 1 && strlen( $cn ) < 80 ) {
+                    $unknown_key = 'unknown_' . sanitize_key( $cn );
+                    if ( ! isset( $auto[ $unknown_key ] ) && ! isset( $manual[ $unknown_key ] ) ) {
+                        $unknown[ $unknown_key ] = array(
+                            'name'     => $cn,
+                            'category' => 'necessary',
+                            'provider' => '?',
+                            'purpose'  => '(Browser-Scan – bitte prüfen)',
+                            'duration' => '?',
+                        );
+                    }
+                }
+            }
+        }
+
+        // Zusammenführen
+        $new_auto = array_merge( $auto, $matched, $unknown );
+        DCB_Cookie_Manager::save_detected_cookies( array(
+            'auto'      => $new_auto,
+            'manual'    => $manual,
+            'last_scan' => current_time( 'mysql' ),
+        ) );
+
+        wp_send_json_success( array(
+            'matched'  => count( $matched ),
+            'unknown'  => count( $unknown ),
+            'total'    => count( $new_auto ),
+            'new'      => count( $matched ) + count( $unknown ),
+        ) );
     }
 
     public function ajax_save_manual() {
