@@ -22,9 +22,9 @@ $i        = 'DCB_I18n';
                 <div id="dcb-progress-bar" class="dcb-progress-fill" style="width:0%"></div>
             </div>
             <div id="dcb-scan-steps" style="margin-top:8px;font-size:12px;color:#555;line-height:1.7">
-                <div id="step-server"  class="dcb-step">⬜ Server-Scan (Plugins, Dateien, Options)…</div>
-                <div id="step-browser" class="dcb-step">⬜ Browser-Scan (echte Cookies im Browser laden)…</div>
-                <div id="step-wait"    class="dcb-step">⬜ Drittanbieter-Scripts laden <span id="dcb-countdown">8</span>s…</div>
+                <div id="step-server"  class="dcb-step">⬜ Server-Scan (HTML aller Seiten + Datei-Scan)…</div>
+                <div id="step-browser" class="dcb-step">⬜ Browser-Scan (alle öffentlichen Seiten im Browser laden)…</div>
+                <div id="step-wait"    class="dcb-step">⬜ Scripts laden… <span id="dcb-countdown"></span></div>
                 <div id="step-match"   class="dcb-step">⬜ Cookies auswerten…</div>
             </div>
         </div>

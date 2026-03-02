@@ -234,14 +234,60 @@ class DCB_Cookie_Scanner {
      *      → deckt GTM, Analytics, Pixel, Hotjar, etc. auf
      * ════════════════════════════════════════════════════════════════════════ */
 
-    private static function scan_via_http( array $known, array $manual_keys, array &$scan_found, callable $add ): void {
-        $url = home_url( '/' );
+    /**
+     * Sammelt alle öffentlich erreichbaren URLs dieser WordPress-Installation:
+     * Startseite + bis zu MAX_PAGES veröffentlichte Seiten und Beiträge.
+     * Duplikate und externe URLs werden herausgefiltert.
+     */
+    public static function get_public_urls(): array {
+        $home   = trailingslashit( home_url( '/' ) );
+        $urls   = array( $home );
+        $limit  = 20; // max. Seiten/Beiträge zusätzlich zur Startseite
 
+        // Alle veröffentlichten post_types mit öffentlichem Frontend holen
+        $post_types = get_post_types( array( 'public' => true ), 'names' );
+
+        $posts = get_posts( array(
+            'post_type'      => array_values( $post_types ),
+            'post_status'    => 'publish',
+            'posts_per_page' => $limit,
+            'orderby'        => 'modified',   // zuletzt geänderte zuerst → relevanteste Inhalte
+            'order'          => 'DESC',
+            'fields'         => 'ids',
+        ) );
+
+        foreach ( $posts as $id ) {
+            $permalink = get_permalink( $id );
+            if ( $permalink && strpos( $permalink, $home ) === 0 ) {
+                $urls[] = $permalink;
+            }
+        }
+
+        return array_unique( $urls );
+    }
+
+    /**
+     * HTTP-Request an eine einzelne URL, wertet Set-Cookie-Header und HTML-Body aus.
+     * Gibt gefundene Cookie-Schlüssel aus known_cookies() zurück.
+     *
+     * @param string   $url
+     * @param array    $known
+     * @param array    $manual_keys
+     * @param array    $scan_found  Per Referenz — wird direkt befüllt
+     * @param callable $add
+     */
+    private static function fetch_and_analyse(
+        string $url,
+        array $known,
+        array $manual_keys,
+        array &$scan_found,
+        callable $add
+    ): void {
         $response = wp_remote_get( $url, array(
-            'timeout'    => 15,
+            'timeout'    => 12,
             'user-agent' => 'DCB-Cookie-Scanner/2.0 (+WordPress)',
-            'sslverify'  => false,          // Lokal-Zertifikate oft ungültig
-            'cookies'    => array(),        // Ohne Cookies anfragen → sauberste Antwort
+            'sslverify'  => false,
+            'cookies'    => array(),
             'headers'    => array(
                 'Accept'          => 'text/html,application/xhtml+xml',
                 'Accept-Language' => 'de-DE,de;q=0.9',
@@ -249,13 +295,12 @@ class DCB_Cookie_Scanner {
             ),
         ) );
 
-        if ( is_wp_error( $response ) ) {
-            return; // Netzwerk nicht erreichbar (z.B. localhost ohne extern-URL) → still fail
-        }
+        if ( is_wp_error( $response ) ) return;
 
-        // ── A1: Set-Cookie-Header auswerten ─────────────────────────────────
-        $headers = wp_remote_retrieve_headers( $response );
-        // WP liefert Requests_Utility_CaseInsensitiveDictionary — getAll() holt alle Set-Cookie
+        $label = parse_url( $url, PHP_URL_PATH ) ?: '/';
+
+        // ── Set-Cookie-Header ────────────────────────────────────────────────
+        $headers        = wp_remote_retrieve_headers( $response );
         $set_cookie_raw = array();
         if ( is_object( $headers ) && method_exists( $headers, 'getAll' ) ) {
             $all = $headers->getAll();
@@ -266,62 +311,67 @@ class DCB_Cookie_Scanner {
             $set_cookie_raw = is_array( $headers['set-cookie'] ) ? $headers['set-cookie'] : array( $headers['set-cookie'] );
         }
 
-        // Cookie-Namen aus "Set-Cookie: name=value; Path=/" extrahieren
-        $received_cookie_names = array();
+        $received = array();
         foreach ( $set_cookie_raw as $raw ) {
-            $parts = explode( ';', $raw );
-            $name_val = explode( '=', trim( $parts[0] ), 2 );
-            if ( ! empty( $name_val[0] ) ) {
-                $received_cookie_names[] = trim( $name_val[0] );
-            }
+            $name = trim( explode( '=', explode( ';', $raw )[0], 2 )[0] );
+            if ( $name !== '' ) $received[] = $name;
         }
 
-        // Jeden empfangenen Cookie-Namen gegen known_cookies() abgleichen
         foreach ( $known as $key => $data ) {
             if ( in_array( $key, $manual_keys, true ) || isset( $scan_found[ $key ] ) ) continue;
             $match = $data['match'] ?? '';
             if ( $match === '' ) {
-                // Exakter Name (Wildcards wegstreifen für Vergleich)
-                $clean = rtrim( str_replace( array('*','.'), '', $data['name'] ), '-_' );
-                foreach ( $received_cookie_names as $cn ) {
+                $clean = rtrim( str_replace( array( '*', '.' ), '', $data['name'] ), '-_' );
+                foreach ( $received as $cn ) {
                     if ( $cn === $clean || $cn === $data['name'] ) {
-                        $scan_found[ $key ] = $data;
+                        $entry = $data;
+                        $entry['_dcb_source'] = 'Set-Cookie: ' . $label;
+                        $scan_found[ $key ]   = $entry;
                         break;
                     }
                 }
             } elseif ( strpos( $match, 'prefix:' ) === 0 ) {
                 $prefix = substr( $match, 7 );
-                foreach ( $received_cookie_names as $cn ) {
+                foreach ( $received as $cn ) {
                     if ( strpos( $cn, $prefix ) === 0 ) {
-                        $scan_found[ $key ] = $data;
+                        $entry = $data;
+                        $entry['_dcb_source'] = 'Set-Cookie: ' . $label;
+                        $scan_found[ $key ]   = $entry;
                         break;
                     }
                 }
             }
         }
 
-        // ── A2: HTML-Quellcode scannen ──────────────────────────────────────
+        // ── HTML-Body ────────────────────────────────────────────────────────
         $body = wp_remote_retrieve_body( $response );
         if ( empty( $body ) ) return;
 
-        // Alle <script src="…"> und inline-Script-Inhalte holen
-        // + auch direkt den Body-Text auf Keywords prüfen
         $km = self::get_keyword_map();
-        self::apply_keywords( $body, $km, $add );
+        self::apply_keywords( $body, $km, $add, 'HTML:' . $label );
 
-        // ── A3: Inline-<script>-Blöcke extra prüfen ─────────────────────────
-        // Manche Scripts werden lazy per data-Attributen oder JSON konfiguriert
-        // → nochmal gezielt auf Data-Layer / Property-IDs prüfen
+        // Inline-<script>-Blöcke
         if ( preg_match_all( '/<script[^>]*>(.*?)<\/script>/si', $body, $m ) ) {
-            foreach ( $m[1] as $script_content ) {
-                self::apply_keywords( $script_content, $km, $add );
+            foreach ( $m[1] as $block ) {
+                self::apply_keywords( $block, $km, $add, 'Script:' . $label );
             }
         }
 
-        // ── A4: <iframe src="…"> und <img src="…"> Pixel-URLs prüfen ─────────
-        if ( preg_match_all( '/<(?:iframe|img|link|source)[^>]+(?:src|href)=["\']([^"\']+)["\'][^>]*>/i', $body, $iframes ) ) {
-            $combined_urls = implode( "\n", $iframes[1] );
-            self::apply_keywords( $combined_urls, $km, $add );
+        // <iframe>/<img>/<source>-URLs
+        if ( preg_match_all( '/<(?:iframe|img|link|source)[^>]+(?:src|href)=["\']([^"\']+)["\'][^>]*>/i', $body, $tags ) ) {
+            self::apply_keywords( implode( "\n", $tags[1] ), $km, $add, 'Embed:' . $label );
+        }
+    }
+
+    /**
+     * Scannt alle öffentlichen Seiten und Beiträge per HTTP.
+     * Bricht früh ab sobald alle bekannten Cookies gefunden wurden.
+     */
+    private static function scan_via_http( array $known, array $manual_keys, array &$scan_found, callable $add ): void {
+        $urls = self::get_public_urls();
+
+        foreach ( $urls as $url ) {
+            self::fetch_and_analyse( $url, $known, $manual_keys, $scan_found, $add );
         }
     }
 

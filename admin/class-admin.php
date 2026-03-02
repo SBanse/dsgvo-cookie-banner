@@ -224,14 +224,20 @@ class DCB_Admin {
             wp_send_json_error( array( 'message' => 'Nonce ungültig.' ) ); return;
         }
 
-        $token = wp_generate_password( 32, false );
-        set_transient( 'dcb_scan_token_' . $token, 1, 60 ); // 60s gültig
+        // Dieselbe URL-Liste wie der Server-Scan verwenden
+        $raw_urls = DCB_Cookie_Scanner::get_public_urls();
 
-        $url = add_query_arg( 'dcb_browser_scan', $token, home_url( '/' ) );
-        wp_send_json_success( array(
-            'url'   => $url,
-            'token' => $token,
-        ) );
+        $scan_urls = array();
+        foreach ( $raw_urls as $url ) {
+            $token = wp_generate_password( 32, false );
+            set_transient( 'dcb_scan_token_' . $token, 1, 120 ); // 2 min gültig
+            $scan_urls[] = array(
+                'url'   => add_query_arg( 'dcb_browser_scan', $token, $url ),
+                'label' => parse_url( $url, PHP_URL_PATH ) ?: '/',
+            );
+        }
+
+        wp_send_json_success( array( 'urls' => $scan_urls ) );
     }
 
     /**

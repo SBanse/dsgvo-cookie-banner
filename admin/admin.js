@@ -85,9 +85,9 @@ jQuery(function ($) {
         });
     });
 
-    // ─ Phase 2: Browser-Scan ────────────────────────────────────────────────
+    // ─ Phase 2: Browser-Scan (alle öffentlichen Seiten) ───────────────────────
     function startBrowserScan($btn, $status) {
-        dcbSetStep('step-browser', 'active', 'Browser-Scan: Scan-URL wird generiert…');
+        dcbSetStep('step-browser', 'active', 'Browser-Scan: URLs werden ermittelt…');
         dcbProgress(30);
 
         $.ajax({
@@ -96,40 +96,61 @@ jQuery(function ($) {
             timeout: 10000,
             data:    { action: 'dcb_get_scan_url', nonce: DCBAdmin.nonce },
             success: function(res) {
-                if (!res || !res.success) {
-                    dcbSetStep('step-browser', 'error', 'Scan-URL nicht verfügbar');
+                if (!res || !res.success || !res.data.urls || !res.data.urls.length) {
+                    dcbSetStep('step-browser', 'error', 'Scan-URLs nicht verfügbar');
                     dcbProgress(100);
                     finishScan($btn, $status, false);
                     return;
                 }
-                var scanUrl = res.data.url;
-                dcbSetStep('step-browser', 'active', 'Seite wird im Hintergrund geladen…');
-                dcbProgress(40);
+                var urls    = res.data.urls;   // [{url, label}, ...]
+                var total   = urls.length;
+                var current = 0;
+                var $frame  = $('#dcb-scan-frame');
+                var DWELL   = 5000; // ms pro Seite — genug für Drittanbieter-Scripts
 
-                // iframe beladen
-                var $frame = $('#dcb-scan-frame');
-                $frame.attr('src', scanUrl);
+                dcbSetStep('step-browser', 'active',
+                    'Seite ' + (current + 1) + '/' + total + ' wird geladen…');
+                dcbProgress(35);
 
-                // Countdown
-                dcbSetStep('step-wait', 'active', 'Drittanbieter-Scripts laden <span id="dcb-countdown">8</span>s…');
-                dcbProgress(50);
-                var seconds = 8;
-                var countdownInterval = setInterval(function() {
-                    seconds--;
-                    $('#dcb-countdown').text(Math.max(0, seconds));
-                    dcbProgress(50 + Math.round((8 - seconds) / 8 * 30));
-                    if (seconds <= 0) clearInterval(countdownInterval);
-                }, 1000);
+                function loadNext() {
+                    if (current >= total) {
+                        // Alle Seiten abgearbeitet
+                        $frame.attr('src', 'about:blank');
+                        dcbSetStep('step-browser', 'done',
+                            'Browser-Scan abgeschlossen (' + total + ' Seiten, ' + dcbBrowserCookies.length + ' Cookies)');
+                        dcbSetStep('step-wait', 'done', 'Wartezeit abgeschlossen');
+                        dcbProgress(82);
+                        submitBrowserCookies($btn, $status);
+                        return;
+                    }
 
-                // Nach 8.5s Cookies einsammeln und ans Backend schicken
-                setTimeout(function() {
-                    clearInterval(countdownInterval);
-                    $frame.attr('src', 'about:blank'); // iframe entladen
-                    dcbSetStep('step-browser', 'done', 'Browser-Scan abgeschlossen (' + dcbBrowserCookies.length + ' Cookies erkannt)');
-                    dcbSetStep('step-wait', 'done', 'Wartezeit abgeschlossen');
-                    dcbProgress(82);
-                    submitBrowserCookies($btn, $status);
-                }, 8500);
+                    var entry = urls[current];
+                    dcbSetStep('step-browser', 'active',
+                        'Seite ' + (current + 1) + '/' + total + ': ' + entry.label);
+                    dcbSetStep('step-wait', 'active',
+                        'Scripts laden… <span id="dcb-countdown">' + Math.round(DWELL/1000) + '</span>s');
+                    dcbProgress(35 + Math.round(current / total * 45));
+
+                    $frame.attr('src', entry.url);
+
+                    // Countdown für diese Seite
+                    var secs = Math.round(DWELL / 1000);
+                    var iv = setInterval(function() {
+                        secs--;
+                        $('#dcb-countdown').text(Math.max(0, secs));
+                        if (secs <= 0) clearInterval(iv);
+                    }, 1000);
+
+                    setTimeout(function() {
+                        clearInterval(iv);
+                        $frame.attr('src', 'about:blank');
+                        current++;
+                        // Kurze Pause zwischen Seiten damit der iframe sich entlädt
+                        setTimeout(loadNext, 400);
+                    }, DWELL + 200);
+                }
+
+                loadNext();
             },
             error: function() {
                 dcbSetStep('step-browser', 'error', 'Browser-Scan: Verbindungsfehler');
