@@ -112,6 +112,7 @@ class DCB_I18n {
             'admin_submenu_settings'    => 'Einstellungen',
             'admin_submenu_scanner'     => 'Cookie-Verwaltung',
             'admin_submenu_consents'    => 'Einwilligungen',
+            'admin_submenu_help'        => 'Hilfe',
             'save_changes'              => 'Änderungen speichern',
 
             // ── Admin: Einstellungs-Tabs ─────────────────────────────────────
@@ -174,6 +175,13 @@ class DCB_I18n {
             'lang_en'                   => 'English',
 
             // ── Admin: Hilfe Tab ─────────────────────────────────────────────
+            'help_scanner_title'         => '🔍 Cookie-Scanner',
+            'help_scanner_intro'         => 'Der Scanner analysiert Ihre Website auf zwei Wegen und liefert nur Cookies, die tatsächlich eingebunden sind – keine Falsch-Positiven aus Plugin-Listen.',
+            'help_scanner_phase1'        => 'Server-Scan: Jede veröffentlichte Seite und jeder Beitrag wird per HTTP-Request abgerufen. Set-Cookie-Header, Script-URLs, Inline-Scripts und Embeds werden gegen eine Datenbank von über 100 bekannten Cookies abgeglichen.',
+            'help_scanner_phase2'        => 'Browser-Scan: Ein unsichtbares iframe lädt jede öffentliche Seite im Browser des Admins. Nach 5 Sekunden (genug Zeit für Drittanbieter-Scripts) werden alle tatsächlich gesetzten document.cookie-Werte gemeldet und abgeglichen.',
+            'help_scanner_incomplete'    => 'Einträge mit ⚠-Badge sind unvollständig: Anbieter, Zweck oder Laufzeit fehlen. Diese müssen ergänzt werden, bevor die Datenschutzerklärung rechtskonform ist.',
+            'help_scanner_reset'         => 'Der Button „Auto-Liste zurücksetzen" entfernt alle automatisch erkannten Einträge. Manuell hinzugefügte Cookies bleiben erhalten. Danach kann ein neuer Scan gestartet werden.',
+            'help_scanner_source'        => 'Das 🤖-Icon zeigt im Tooltip die genaue Quelle: z. B. „HTML:/shop/" bedeutet, der Cookie-Hinweis wurde im Quellcode der Shop-Seite gefunden.',
             'help_shortcodes_title'      => '📋 Shortcodes',
             'help_shortcode_list_desc'   => 'Vollständige Cookie-Tabelle ausgeben (für Datenschutzerklärung)',
             'help_shortcode_cat_desc'    => 'Nur Cookies einer Kategorie anzeigen, z. B. category="statistics"',
@@ -206,9 +214,10 @@ class DCB_I18n {
             'help_check_6'               => 'Gleichwertige Buttons – kein Dark Pattern',
             'help_check_7'               => 'Script-Blocking verhindert vorzeitiges Laden',
             'help_check_8'               => 'Embed-Platzhalter für Drittanbieter-Inhalte',
+            'help_check_9'               => 'Alle Cookie-Einträge vollständig (Anbieter, Zweck, Laufzeit ausgefüllt)',
 
             // ── Admin: Scanner ───────────────────────────────────────────────
-            'scanner_intro'             => 'Scannt Ihre WordPress-Installation auf verwendete Cookies. Alle Felder können direkt in der Tabelle bearbeitet werden – klicken Sie dazu auf den ✏️-Button.',
+            'scanner_intro'             => 'Scannt alle öffentlichen Seiten und Beiträge Ihrer WordPress-Installation auf verwendete Cookies (Server-Scan + Browser-Scan). Rot/orange markierte Einträge sind unvollständig – klicken Sie auf ✏️ um Anbieter, Zweck und Laufzeit zu ergänzen.',
             'scan_start_btn'            => '🔍 Scan starten',
             'scan_running'              => '⏳ Scanne…',
             'scan_done'                 => '✅ %d Cookies gefunden. Seite wird neu geladen…',
@@ -304,6 +313,7 @@ class DCB_I18n {
             'admin_submenu_settings'    => 'Settings',
             'admin_submenu_scanner'     => 'Cookie Management',
             'admin_submenu_consents'    => 'Consents',
+            'admin_submenu_help'        => 'Help',
             'save_changes'              => 'Save Changes',
 
             // ── Admin: Settings tabs ─────────────────────────────────────────
@@ -366,6 +376,13 @@ class DCB_I18n {
             'lang_en'                   => 'English',
 
             // ── Admin: Help tab ──────────────────────────────────────────────
+            'help_scanner_title'         => '🔍 Cookie Scanner',
+            'help_scanner_intro'         => 'The scanner analyses your website in two stages and only reports cookies that are actually present – no false positives from plugin lists.',
+            'help_scanner_phase1'        => 'Server scan: every published page and post is fetched via HTTP. Set-Cookie headers, script URLs, inline scripts and embeds are matched against a database of 100+ known cookies.',
+            'help_scanner_phase2'        => 'Browser scan: a hidden iframe loads each public page in the admin\'s browser. After 5 seconds (enough time for third-party scripts to execute) all document.cookie values are reported and matched.',
+            'help_scanner_incomplete'    => 'Entries with a ⚠ badge are incomplete: provider, purpose or duration is missing. These must be filled in before your Privacy Policy is fully compliant.',
+            'help_scanner_reset'         => 'The "Reset auto list" button removes all automatically detected entries. Manually added cookies are preserved. You can then run a fresh scan.',
+            'help_scanner_source'        => 'The 🤖 icon shows the exact detection source in its tooltip, e.g. "HTML:/shop/" means the cookie hint was found in the source code of the shop page.',
             'help_shortcodes_title'      => '📋 Shortcodes',
             'help_shortcode_list_desc'   => 'Output full cookie table (for Privacy Policy)',
             'help_shortcode_cat_desc'    => 'Show only one category, e.g. category="statistics"',
@@ -398,9 +415,10 @@ class DCB_I18n {
             'help_check_6'               => 'Equal-weight buttons – no dark pattern',
             'help_check_7'               => 'Script blocking prevents premature loading',
             'help_check_8'               => 'Embed placeholders for third-party content',
+            'help_check_9'               => 'All cookie entries complete (provider, purpose and duration filled in)',
 
             // ── Admin: Scanner ───────────────────────────────────────────────
-            'scanner_intro'             => 'Scans your WordPress installation for cookies in use. All fields can be edited directly in the table – click the ✏️ button in the relevant row.',
+            'scanner_intro'             => 'Scans all public pages and posts of your WordPress installation for cookies (server scan + browser scan). Entries marked orange/red are incomplete – click ✏️ to add provider, purpose and duration.',
             'scan_start_btn'            => '🔍 Start Scan',
             'scan_running'              => '⏳ Scanning…',
             'scan_done'                 => '✅ %d cookies found. Reloading page…',

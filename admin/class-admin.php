@@ -68,6 +68,7 @@ class DCB_Admin {
         $embeds_label = DCB_I18n::get_lang() === 'de' ? '🖼️ Einbettungen' : '🖼️ Embeds';
         $this->page_hooks[] = add_submenu_page( 'dcb-settings', $embeds_label, $embeds_label, 'manage_options', 'dcb-embeds', array( $this, 'render_embeds_page' ) );
         $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_consents'), DCB_I18n::t('admin_submenu_consents'), 'manage_options', 'dcb-consents', array( $this, 'render_consents_page' ) );
+        $this->page_hooks[] = add_submenu_page( 'dcb-settings', DCB_I18n::t('admin_submenu_help'),     DCB_I18n::t('admin_submenu_help'),     'manage_options', 'dcb-help',     array( $this, 'render_help_page' ) );
     }
 
     /* ── Settings registration ─────────────────────────────────────────────── */
@@ -541,5 +542,10 @@ class DCB_Admin {
     public function render_consents_page() {
         $consents = DCB_Cookie_Manager::get_consents( 100 );
         include DCB_PLUGIN_DIR . 'admin/views/consents.php';
+    }
+
+    public function render_help_page() {
+        $settings = DCB_Cookie_Manager::get_settings();
+        include DCB_PLUGIN_DIR . 'admin/views/help.php';
     }
 }
