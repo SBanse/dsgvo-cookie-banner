@@ -37,8 +37,25 @@ $i        = 'DCB_I18n';
             sandbox="allow-scripts allow-same-origin allow-forms"
             aria-hidden="true"></iframe>
 
+    <?php
+    // Anzahl unvollständiger Einträge für den Header berechnen
+    $placeholders_hdr = array( '', '?', '-', '(Browser-Scan â bitte prÃ¼fen)' );
+    $incomplete_count = 0;
+    foreach ( $all as $entry ) {
+        if ( in_array( trim( $entry['provider'] ?? '' ), $placeholders_hdr, true )
+          || in_array( trim( $entry['purpose']  ?? '' ), $placeholders_hdr, true )
+          || in_array( trim( $entry['duration'] ?? '' ), $placeholders_hdr, true ) ) {
+            $incomplete_count++;
+        }
+    }
+    ?>
     <div class="dcb-table-header">
-        <h2 style="margin:0"><?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)</h2>
+        <h2 style="margin:0">
+            <?php echo esc_html( $i::t('cookie_list_title') ); ?> (<?php echo count( $all ); ?> <?php echo esc_html( $i::t('cookie_list_entries') ); ?>)
+            <?php if ( $incomplete_count > 0 ) : ?>
+                <span class="dcb-incomplete-count" id="dcb-incomplete-total" title="<?php echo esc_attr( $incomplete_count ); ?> EintrÃ¤ge mit fehlenden Angaben">â  <?php echo $incomplete_count; ?> unvollstÃ¤ndig</span>
+            <?php endif; ?>
+        </h2>
         <div style="display:flex;gap:8px;align-items:center">
             <button id="dcb-add-row-btn" class="button button-secondary"><?php echo esc_html( $i::t('add_cookie_btn') ); ?></button>
             <?php if ( ! empty( $auto ) ) : ?>
@@ -89,9 +106,19 @@ $i        = 'DCB_I18n';
             <tbody>
             <?php foreach ( $group as $k => $c ) :
                 $is_manual = isset( $manual[ $k ] );
+                // Unvollständig wenn Anbieter, Zweck oder Laufzeit fehlen oder Platzhalter-Werte enthalten
+                $placeholders = array( '', '?', '-', '(Browser-Scan â bitte prÃ¼fen)' );
+                $is_incomplete = in_array( trim( $c['provider'] ?? '' ), $placeholders, true )
+                              || in_array( trim( $c['purpose']  ?? '' ), $placeholders, true )
+                              || in_array( trim( $c['duration'] ?? '' ), $placeholders, true );
             ?>
-                <tr class="dcb-cookie-row" data-key="<?php echo esc_attr( $k ); ?>">
-                    <td class="dcb-view dcb-view-name"><code><?php echo esc_html( $c['name'] ); ?></code></td>
+                <tr class="dcb-cookie-row<?php echo $is_incomplete ? ' dcb-incomplete' : ''; ?>" data-key="<?php echo esc_attr( $k ); ?>" data-incomplete="<?php echo $is_incomplete ? '1' : '0'; ?>">
+                    <td class="dcb-view dcb-view-name">
+                        <?php if ( $is_incomplete ) : ?>
+                            <span class="dcb-incomplete-badge" title="Anbieter, Zweck oder Laufzeit fehlen â bitte ergÃ¤nzen">&#9888;</span>
+                        <?php endif; ?>
+                        <code><?php echo esc_html( $c['name'] ); ?></code>
+                    </td>
                     <td class="dcb-view dcb-view-provider"><?php echo esc_html( $c['provider'] ); ?></td>
                     <td class="dcb-view dcb-view-purpose"><?php echo esc_html( $c['purpose'] ); ?></td>
                     <td class="dcb-view dcb-view-duration"><?php echo esc_html( $c['duration'] ); ?></td>

@@ -411,6 +411,26 @@ jQuery(function ($) {
             $row.find('.dcb-view-category').html(
                 '<span class="dcb-cat-badge dcb-badge-' + esc(updated.category) + '">' + esc(catLabel) + '</span>'
             );
+
+            // Unvollständigkeits-Warnung aktualisieren
+            var placeholders = ['', '?', '-', '(Browser-Scan – bitte prüfen)'];
+            var nowIncomplete = placeholders.indexOf($.trim(updated.provider)) !== -1
+                             || placeholders.indexOf($.trim(updated.purpose))  !== -1
+                             || placeholders.indexOf($.trim(updated.duration)) !== -1;
+
+            if (nowIncomplete) {
+                $row.addClass('dcb-incomplete').attr('data-incomplete', '1');
+                if (!$row.find('.dcb-incomplete-badge').length) {
+                    $row.find('.dcb-view-name code').before(
+                        '<span class="dcb-incomplete-badge" title="Anbieter, Zweck oder Laufzeit fehlen – bitte ergänzen">⚠</span>'
+                    );
+                }
+            } else {
+                $row.removeClass('dcb-incomplete').attr('data-incomplete', '0');
+                $row.find('.dcb-incomplete-badge').remove();
+            }
+            updateIncompleteCount();
+
             $row.find('.dcb-view').css('background', '#d4edda').show();
             setTimeout(function () { $row.find('.dcb-view').css('background', ''); }, 1400);
         } else {
@@ -431,14 +451,32 @@ jQuery(function ($) {
     function updateCounts() {
         // Gesamt-Zähler
         var total = $('.dcb-cookie-row').length;
-        $('.dcb-table-header h2').text(
-            __('cookie_list_title') + ' (' + total + ' ' + __('cookie_list_entries') + ')'
-        );
+        // Titel neu setzen ohne den Unvollständig-Badge zu überschreiben
+        var $h2 = $('.dcb-table-header h2');
+        var badgeHtml = $h2.find('.dcb-incomplete-count').length
+            ? $h2.find('.dcb-incomplete-count')[0].outerHTML : '';
+        $h2.text(__('cookie_list_title') + ' (' + total + ' ' + __('cookie_list_entries') + ')');
+        if (badgeHtml) $h2.append(' ' + badgeHtml);
         // Kategorie-Zähler
         $('.dcb-cat-section').each(function () {
             var n = $(this).find('.dcb-cookie-row').length;
             $(this).find('.dcb-cat-count').text(n + ' Cookie' + (n !== 1 ? 's' : ''));
         });
+    }
+
+    function updateIncompleteCount() {
+        var n = $('.dcb-cookie-row.dcb-incomplete').length;
+        var $badge = $('#dcb-incomplete-total');
+        if (n > 0) {
+            var html = '<span class="dcb-incomplete-count" id="dcb-incomplete-total" title="' + n + ' Einträge mit fehlenden Angaben">⚠ ' + n + ' unvollständig</span>';
+            if ($badge.length) {
+                $badge.replaceWith(html);
+            } else {
+                $('.dcb-table-header h2').append(' ' + html);
+            }
+        } else {
+            $badge.remove();
+        }
     }
 
     function esc(str) {
