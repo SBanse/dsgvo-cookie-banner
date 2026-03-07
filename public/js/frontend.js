@@ -118,7 +118,7 @@
 
     document.getElementById('dcb-accept-all').onclick       = function () { acceptAll(); };
     document.getElementById('dcb-accept-necessary').onclick = function () { acceptNecessary(); };
-    document.getElementById('dcb-customize').onclick        = function () { openModal(); };
+    document.getElementById('dcb-customize').onclick        = function () { openModal(this); };
   }
 
   function hideBanner() {
@@ -151,30 +151,54 @@
     closeModal();
   }
 
+  // ─── Focus-Trap Helfer ────────────────────────────────────────────────────
+  const FOCUSABLE = [
+    'a[href]', 'button:not([disabled])', 'input:not([disabled])',
+    'select:not([disabled])', 'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(',');
+
+  function trapFocus(modal, e) {
+    const els   = Array.from(modal.querySelectorAll(FOCUSABLE));
+    const first = els[0];
+    const last  = els[els.length - 1];
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+    }
+  }
+
   // ─── Modal ────────────────────────────────────────────────────────────────
-  function openModal() {
+  // Merkt sich das Element das das Modal geöffnet hat (für Fokus-Rückgabe)
+  let _modalTrigger = null;
+
+  function openModal(triggerEl) {
     // SINGLETON: Wenn Modal bereits offen ist, nur fokussieren
     if (modalVisible) {
       const m = document.getElementById('dcb-modal');
       if (m) m.focus();
       return;
     }
-    modalVisible = true;
+    modalVisible  = true;
+    _modalTrigger = triggerEl || document.activeElement || null;
 
     const existing = getConsent();
     let rows = '';
     Object.entries(cfg.categories).forEach(function ([key, cat]) {
       const checked  = existing ? !!existing.categories[key] : !!cat.required;
       const isReq    = !!cat.required;
+      const inputId  = 'dcb-cat-' + esc(key);
       rows +=
         '<div class="dcb-category">' +
         '<div class="dcb-category-header">' +
-        '<label class="dcb-toggle">' +
-        '<input type="checkbox" data-cat="' + esc(key) + '"' +
+        '<label class="dcb-toggle" for="' + inputId + '">' +
+        '<input type="checkbox" id="' + inputId + '" data-cat="' + esc(key) + '"' +
         (isReq ? ' disabled checked' : (checked ? ' checked' : '')) + '>' +
-        '<span class="dcb-slider"></span>' +
+        '<span class="dcb-slider" aria-hidden="true"></span>' +
         '</label>' +
-        '<label>' + esc(cat.label) + (isReq ? ' <small>(' + esc(__('always_active','Immer aktiv')) + ')</small>' : '') + '</label>' +
+        '<span class="dcb-cat-label">' + esc(cat.label) + (isReq ? ' <small>(' + esc(__('always_active','Immer aktiv')) + ')</small>' : '') + '</span>' +
         '</div>' +
         '<div class="dcb-category-desc">' + esc(cat.description) + '</div>' +
         '</div>';
@@ -184,9 +208,11 @@
     overlay.id = 'dcb-overlay-wrap';
     overlay.innerHTML =
       '<div id="dcb-overlay">' +
-      '<div id="dcb-modal" role="dialog" aria-modal="true" tabindex="-1">' +
-      '<button class="dcb-modal-close" id="dcb-modal-close" aria-label="Schließen">&times;</button>' +
-      '<h2>' + esc(cfg.title) + '</h2>' +
+      '<div id="dcb-modal" role="dialog" aria-modal="true" aria-labelledby="dcb-modal-title" tabindex="-1">' +
+      '<button class="dcb-modal-close" id="dcb-modal-close" aria-label="' + esc(__('aria_close','Schließen')) + '">' +
+      '<span aria-hidden="true">&times;</span>' +
+      '</button>' +
+      '<h2 id="dcb-modal-title">' + esc(cfg.title) + '</h2>' +
       '<p>' + esc(cfg.text) + '</p>' +
       rows +
       '<div class="dcb-modal-btns">' +
@@ -196,26 +222,26 @@
       '</div></div></div>';
 
     document.body.appendChild(overlay);
-    // Fokus setzen für Barrierefreiheit
-    setTimeout(function () {
-      const m = document.getElementById('dcb-modal');
-      if (m) m.focus();
-    }, 50);
+
+    const modal = document.getElementById('dcb-modal');
+
+    // Fokus ins Modal setzen
+    setTimeout(function () { if (modal) modal.focus(); }, 50);
+
+    // Focus-Trap: Tab bleibt im Modal
+    document._dcbTrapHandler = function (e) { trapFocus(modal, e); };
+    document.addEventListener('keydown', document._dcbTrapHandler);
 
     document.getElementById('dcb-modal-close').onclick = function () { closeModal(); };
 
-    // Overlay-Hintergrund schließt Modal nur wenn Banner nicht mehr sichtbar
+    // Overlay-Hintergrund schließt Modal
     document.getElementById('dcb-overlay').onclick = function (e) {
       if (e.target.id === 'dcb-overlay') closeModal();
     };
 
-    document.getElementById('dcb-modal-all').onclick = function () {
-      acceptAll();
-    };
-    document.getElementById('dcb-modal-necessary').onclick = function () {
-      acceptNecessary();
-    };
-    document.getElementById('dcb-modal-save').onclick = function () {
+    document.getElementById('dcb-modal-all').onclick       = function () { acceptAll(); };
+    document.getElementById('dcb-modal-necessary').onclick = function () { acceptNecessary(); };
+    document.getElementById('dcb-modal-save').onclick      = function () {
       const cats = {};
       document.querySelectorAll('#dcb-modal [data-cat]').forEach(function (cb) {
         cats[cb.dataset.cat] = cb.checked;
@@ -235,6 +261,17 @@
     const wrap = document.getElementById('dcb-overlay-wrap');
     if (wrap) wrap.parentNode.removeChild(wrap);
     modalVisible = false;
+
+    // Fokus zurück auf auslösendes Element
+    if (_modalTrigger && typeof _modalTrigger.focus === 'function') {
+      _modalTrigger.focus();
+    }
+    _modalTrigger = null;
+
+    if (document._dcbTrapHandler) {
+      document.removeEventListener('keydown', document._dcbTrapHandler);
+      delete document._dcbTrapHandler;
+    }
     if (document._dcbEscHandler) {
       document.removeEventListener('keydown', document._dcbEscHandler);
       delete document._dcbEscHandler;
@@ -261,8 +298,8 @@
       }
     },
     // Direkt Einstellungs-Modal öffnen
-    openSettings: function () {
-      if (!modalVisible) openModal();
+    openSettings: function (triggerEl) {
+      if (!modalVisible) openModal(triggerEl || null);
     },
     // Aktuellen Einwilligungsstatus abfragen
     getConsent: getConsent,

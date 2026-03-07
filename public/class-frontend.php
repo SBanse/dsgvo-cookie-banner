@@ -57,12 +57,15 @@ class DCB_Frontend {
                 'necessary_only'     => DCB_I18n::t('necessary_only_modal'),
                 'privacy_link'       => DCB_I18n::t('privacy_link'),
                 'imprint_link'       => DCB_I18n::t('imprint_link'),
+                'aria_dialog_label'  => DCB_I18n::t('aria_dialog_label'),
+                'aria_close'         => DCB_I18n::t('aria_close'),
+                'aria_embed_ph'      => DCB_I18n::t('aria_embed_placeholder'),
             ),
         ) );
     }
 
     public function render_banner() {
-        echo '<div id="dcb-banner-root" aria-live="polite" aria-label="Cookie-Einstellungen"></div>';
+        echo '<div id="dcb-banner-root" aria-live="polite" aria-label="' . esc_attr( DCB_I18n::t('aria_dialog_label') ) . '"></div>';'
     }
 
     /**

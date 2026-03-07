@@ -209,9 +209,11 @@ class DCB_Embed_Shortcodes {
             <?php echo $thumbnail_html; ?>
 
             <div class="dcb-embed-placeholder"
+                 role="region"
+                 aria-label="<?php echo esc_attr( DCB_I18n::t('aria_embed_placeholder') . ': ' . $title ); ?>"
                  style="--dcb-embed-bg:<?php echo $bg; ?>;--dcb-embed-accent:<?php echo $accent; ?>;--dcb-embed-tc:<?php echo $tc; ?>;min-height:<?php echo $height_css; ?>;">
 
-                <div class="dcb-embed-icon"><?php echo $icon; ?></div>
+                <div class="dcb-embed-icon" aria-hidden="true"><?php echo $icon; ?></div>
 
                 <div class="dcb-embed-info">
                     <strong class="dcb-embed-title"><?php echo esc_html( $title ); ?></strong>

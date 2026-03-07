@@ -47,12 +47,19 @@
   transition: filter .15s;
 }
 .dcb-btn:hover { filter: brightness(1.08); }
-.dcb-btn-primary  { background: var(--dcb-primary); color: #fff; border-color: var(--dcb-primary); }
-.dcb-btn-secondary{ background: transparent; color: var(--dcb-primary); border-color: var(--dcb-primary); }
-.dcb-btn-text     { background: none; border: none; color: #666; font-weight: 500; text-decoration: underline; font-size: 13px; padding: 4px 8px; }
+.dcb-btn:focus-visible {
+  outline: 3px solid var(--dcb-primary);
+  outline-offset: 2px;
+}
+.dcb-btn-primary   { background: var(--dcb-primary); color: #fff; border-color: var(--dcb-primary); }
+.dcb-btn-secondary { background: transparent; color: var(--dcb-primary); border-color: var(--dcb-primary); }
+/* #555 = 7.0:1 auf Weiß — erfüllt WCAG AA für großen und kleinen Text */
+.dcb-btn-text      { background: none; border: none; color: #555; font-weight: 500; text-decoration: underline; font-size: 13px; padding: 4px 8px; }
+.dcb-btn-text:focus-visible { outline: 3px solid var(--dcb-primary); outline-offset: 2px; border-radius: 3px; }
 
-.dcb-links { font-size: 12px; color: #888; margin-left: auto; }
-.dcb-links a { color: #888; }
+/* #767676 = 4.54:1 auf Weiß — knapp über WCAG AA Mindestanforderung */
+.dcb-links { font-size: 12px; color: #767676; margin-left: auto; }
+.dcb-links a { color: #767676; }
 
 /* ── Detail Modal ── */
 #dcb-modal {
@@ -65,7 +72,15 @@
   box-shadow: var(--dcb-shadow);
 }
 #dcb-modal h2 { margin-top: 0; }
-.dcb-modal-close { float: right; background: none; border: none; font-size: 22px; cursor: pointer; color: #888; margin-top: -4px; }
+.dcb-modal-close {
+  float: right; background: none; border: none; font-size: 22px;
+  cursor: pointer; color: #888; margin-top: -4px; border-radius: 4px;
+}
+.dcb-modal-close:focus-visible {
+  outline: 3px solid var(--dcb-primary);
+  outline-offset: 2px;
+  color: var(--dcb-primary);
+}
 
 .dcb-category {
   border: 1px solid #e0e0e0;
@@ -98,6 +113,10 @@
 .dcb-toggle input:checked + .dcb-slider { background: var(--dcb-primary); }
 .dcb-toggle input:checked + .dcb-slider::before { transform: translateX(18px); }
 .dcb-toggle input:disabled + .dcb-slider { opacity: .6; cursor: not-allowed; }
+.dcb-toggle input:focus-visible + .dcb-slider {
+  outline: 3px solid var(--dcb-primary);
+  outline-offset: 3px;
+}
 
 .dcb-modal-btns { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
 
@@ -119,3 +138,14 @@
 /* dcb_cookie_list block hint */
 .dcb-block-hint { margin-top: 6px; font-size: 12px; color: #888; }
 .dcb-block-hint code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; }
+
+/* ── Barrierefreiheit: Animationen reduzieren ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  #dcb-banner,
+  .dcb-btn,
+  .dcb-slider,
+  .dcb-slider::before {
+    transition: none !important;
+    animation: none !important;
+  }
+}

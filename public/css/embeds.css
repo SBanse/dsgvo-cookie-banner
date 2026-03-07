@@ -91,6 +91,10 @@
 }
 .dcb-embed-load-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
 .dcb-embed-load-btn:active { transform: translateY(0); }
+.dcb-embed-load-btn:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+}
 
 /* Primary "load once" button */
 .dcb-embed-load-once {
@@ -165,4 +169,19 @@
 .dcb-embed-instagram .dcb-embed-load-once,
 .dcb-embed-facebook .dcb-embed-load-once {
     color: #fff;
+}
+
+/* ── Barrierefreiheit: Animationen reduzieren ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .dcb-embed-load-btn,
+  .dcb-embed-placeholder,
+  .dcb-embed-thumb {
+    transition: none !important;
+    transform: none !important;
+  }
+  .dcb-embed-loading .dcb-embed-placeholder::after {
+    animation: none !important;
+    border: 3px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+  }
 }
