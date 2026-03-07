@@ -69,7 +69,7 @@ class DCB_Embed_Shortcodes {
 
     /* ── Build the iframe src per type ────────────────────────────────────── */
 
-    private function build_iframe_src( string $type, array $atts ): string {
+    private function build_iframe_src( $type, $atts ) {
         $id  = sanitize_text_field( $atts['id']  ?? '' );
         $src = esc_url_raw(         $atts['src'] ?? '' );
         $url = esc_url_raw(         $atts['url'] ?? '' );
@@ -129,7 +129,7 @@ class DCB_Embed_Shortcodes {
 
     /* ── Render the placeholder HTML ──────────────────────────────────────── */
 
-    private function render_placeholder( array $embed, array $atts, string $iframe_src ): string {
+    private function render_placeholder( $embed, $atts, $iframe_src ) {
         $lang  = DCB_I18n::get_lang();
         $id    = $embed['id'];
 
@@ -242,7 +242,7 @@ class DCB_Embed_Shortcodes {
 
     /* ── Render a live iframe ──────────────────────────────────────────────── */
 
-    private function render_iframe( string $src, string $width, string $height, string $title, string $type, string $extra_class = '' ): string {
+    private function render_iframe( $src, $width, $height, $title, $type, $extra_class = '' ) {
         $width_css  = is_numeric( $width )  ? $width  . 'px' : $width;
         $height_css = is_numeric( $height ) ? $height . 'px' : $height;
 

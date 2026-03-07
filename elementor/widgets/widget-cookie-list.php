@@ -13,7 +13,7 @@ class DCB_Widget_Cookie_List extends \Elementor\Widget_Base {
     public function get_categories() { return array( DCB_Elementor_Integration::CATEGORY ); }
     public function get_keywords()   { return array( 'cookie', 'dsgvo', 'gdpr', 'datenschutz', 'privacy' ); }
 
-    protected function register_controls(): void {
+    protected function register_controls() {
         $lang = DCB_I18n::get_lang();
         $de   = $lang === 'de';
 
@@ -50,7 +50,7 @@ class DCB_Widget_Cookie_List extends \Elementor\Widget_Base {
         $this->end_controls_section();
     }
 
-    protected function render(): void {
+    protected function render() {
         $settings = $this->get_settings_for_display();
         $cat_attr = ! empty( $settings['category'] ) ? ' category="' . esc_attr( $settings['category'] ) . '"' : '';
         echo do_shortcode( '[dcb_cookie_list' . $cat_attr . ']' );

@@ -10,9 +10,9 @@ class DCB_Widget_Instagram extends DCB_Widget_Embed_Base {
         return array_merge( parent::get_keywords(), array( 'instagram', 'social', 'photo' ) );
     }
 
-    protected function get_embed_type(): string { return 'instagram'; }
+    protected function get_embed_type() { return 'instagram'; }
 
-    protected function register_source_controls(): void {
+    protected function register_source_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         $this->add_control( 'post_url', array(
@@ -34,7 +34,7 @@ class DCB_Widget_Instagram extends DCB_Widget_Embed_Base {
         ) );
     }
 
-    protected function build_shortcode( array $s ): string {
+    protected function build_shortcode( $s ) {
         $url = ! empty( $s['post_url'] ) ? ' url="' . esc_attr( $s['post_url'] ) . '"' : '';
         return "[dcb_instagram{$url}]";
     }

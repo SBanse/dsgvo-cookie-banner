@@ -13,7 +13,7 @@ class DCB_Embeds {
 
     /* ── Voreinstellungen ──────────────────────────────────────────────────── */
 
-    public static function default_embed_types(): array {
+    public static function default_embed_types() {
         return array(
             'youtube' => array(
                 'id'           => 'youtube',
@@ -172,7 +172,7 @@ class DCB_Embeds {
 
     /* ── CRUD ──────────────────────────────────────────────────────────────── */
 
-    public static function get_embeds(): array {
+    public static function get_embeds() {
         $saved    = get_option( self::OPTION_EMBEDS, array() );
         $defaults = self::default_embed_types();
         // Merge: saved overrides defaults, custom types are appended
@@ -189,22 +189,22 @@ class DCB_Embeds {
         return $result;
     }
 
-    public static function get_embed( string $id ): ?array {
+    public static function get_embed( $id ): ?array {
         $embeds = self::get_embeds();
         return $embeds[ $id ] ?? null;
     }
 
-    public static function save_embeds( array $embeds ): void {
+    public static function save_embeds( $embeds ) {
         update_option( self::OPTION_EMBEDS, $embeds );
     }
 
-    public static function save_embed( string $id, array $data ): bool {
+    public static function save_embed( $id, $data ) {
         $saved = get_option( self::OPTION_EMBEDS, array() );
         $saved[ $id ] = $data;
         return (bool) update_option( self::OPTION_EMBEDS, $saved );
     }
 
-    public static function delete_embed( string $id ): void {
+    public static function delete_embed( $id ) {
         $defaults = self::default_embed_types();
         $saved    = get_option( self::OPTION_EMBEDS, array() );
         if ( isset( $defaults[ $id ] ) ) {
@@ -219,7 +219,7 @@ class DCB_Embeds {
 
     /* ── Helper: localised text ────────────────────────────────────────────── */
 
-    public static function get_text( array $embed, string $field ): string {
+    public static function get_text( $embed, $field ) {
         $lang = DCB_I18n::get_lang();
         $key  = $field . '_' . $lang;
         return $embed[ $key ] ?? $embed[ $field . '_de' ] ?? '';
@@ -227,7 +227,7 @@ class DCB_Embeds {
 
     /* ── Sanitise one embed array ──────────────────────────────────────────── */
 
-    public static function sanitise_embed( array $input ): array {
+    public static function sanitise_embed( $input ) {
         $cats = array_keys( DCB_Cookie_Manager::get_settings()['categories'] ?? array() );
 
         return array(

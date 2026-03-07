@@ -10,9 +10,9 @@ class DCB_Widget_OpenStreetMap extends DCB_Widget_Embed_Base {
         return array_merge( parent::get_keywords(), array( 'openstreetmap', 'osm', 'map', 'karte', 'datenschutz' ) );
     }
 
-    protected function get_embed_type(): string { return 'openstreetmap'; }
+    protected function get_embed_type() { return 'openstreetmap'; }
 
-    protected function register_source_controls(): void {
+    protected function register_source_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         $this->add_control( 'lat', array(
@@ -45,7 +45,7 @@ class DCB_Widget_OpenStreetMap extends DCB_Widget_Embed_Base {
         ) );
     }
 
-    protected function build_shortcode( array $s ): string {
+    protected function build_shortcode( $s ) {
         $lat    = ! empty( $s['lat'] )  ? ' lat="'  . esc_attr( $s['lat'] )  . '"' : '';
         $lng    = ! empty( $s['lng'] )  ? ' lng="'  . esc_attr( $s['lng'] )  . '"' : '';
         $zoom   = ! empty( $s['zoom']['size'] ) ? ' zoom="' . intval( $s['zoom']['size'] ) . '"' : ' zoom="14"';

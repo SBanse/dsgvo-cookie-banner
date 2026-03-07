@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  */
 class DCB_Cookie_Scanner {
 
-    public static function known_cookies(): array {
+    public static function known_cookies() {
         return array(
             // WordPress Core
             '_wpnonce'                   => array( 'name' => '_wpnonce',                'category' => 'necessary',   'provider' => 'WordPress',            'purpose' => 'Sicherheits-Token für Formulare und AJAX',          'duration' => 'Session' ),
@@ -173,7 +173,7 @@ class DCB_Cookie_Scanner {
      *   E) WordPress-Core              → immer vorhanden
      * ════════════════════════════════════════════════════════════════════════ */
 
-    public static function scan(): array {
+    public static function scan() {
         $known       = self::known_cookies();
         $stored      = DCB_Cookie_Manager::get_detected_cookies();
         $manual      = $stored['manual'] ?? array();
@@ -182,7 +182,7 @@ class DCB_Cookie_Scanner {
 
         // $add( $key, $source ) — source wird im _dcb_source-Feld gespeichert
         // damit im Admin genau sichtbar ist, welche Methode den Cookie gefunden hat.
-        $add = function ( $key, string $source = '' ) use ( $known, $manual_keys, &$scan_found ) {
+        $add = function ( $key, $source = '' ) use ( $known, $manual_keys, &$scan_found ) {
             if ( ! isset( $known[ $key ] ) )            return;
             if ( in_array( $key, $manual_keys, true ) ) return;
             if ( isset( $scan_found[ $key ] ) )         return;
@@ -239,7 +239,7 @@ class DCB_Cookie_Scanner {
      * Startseite + bis zu MAX_PAGES veröffentlichte Seiten und Beiträge.
      * Duplikate und externe URLs werden herausgefiltert.
      */
-    public static function get_public_urls(): array {
+    public static function get_public_urls() {
         $home   = trailingslashit( home_url( '/' ) );
         $urls   = array( $home );
         $limit  = 20; // max. Seiten/Beiträge zusätzlich zur Startseite
@@ -277,12 +277,12 @@ class DCB_Cookie_Scanner {
      * @param callable $add
      */
     private static function fetch_and_analyse(
-        string $url,
-        array $known,
-        array $manual_keys,
+        $url,
+        $known,
+        $manual_keys,
         array &$scan_found,
-        callable $add
-    ): void {
+        $add
+    ) {
         $response = wp_remote_get( $url, array(
             'timeout'    => 12,
             'user-agent' => 'DCB-Cookie-Scanner/2.0 (+WordPress)',
@@ -367,7 +367,7 @@ class DCB_Cookie_Scanner {
      * Scannt alle öffentlichen Seiten und Beiträge per HTTP.
      * Bricht früh ab sobald alle bekannten Cookies gefunden wurden.
      */
-    private static function scan_via_http( array $known, array $manual_keys, array &$scan_found, callable $add ): void {
+    private static function scan_via_http( $known, $manual_keys, array &$scan_found, $add ) {
         $urls = self::get_public_urls();
 
         foreach ( $urls as $url ) {
@@ -383,7 +383,7 @@ class DCB_Cookie_Scanner {
      *  Trifft zu wenn das Plugin installiert aber kein Script direkt im HTML.
      * ════════════════════════════════════════════════════════════════════════ */
 
-    private static function scan_source_files( callable $add ): void {
+    private static function scan_source_files( $add ) {
         $km    = self::get_keyword_map();
         $files = array();
 
@@ -423,7 +423,7 @@ class DCB_Cookie_Scanner {
      *  KEYWORD-MAP — URL/JS-Snippets → Cookie-Schlüssel
      * ════════════════════════════════════════════════════════════════════════ */
 
-    private static function get_keyword_map(): array {
+    private static function get_keyword_map() {
         // WICHTIG: Nur vollständige externe URLs oder sehr spezifische JS-Signaturen.
         // Kurze generische Strings wie 'UA-', 'gtag(' oder 'dataLayer' kommen in
         // fast jedem Plugin-Bundle vor und produzieren False Positives.
@@ -528,7 +528,7 @@ class DCB_Cookie_Scanner {
     }
 
     /* ── Keyword-Map anwenden ── */
-    private static function apply_keywords( string $content, array $km, callable $add, string $source = '' ): void {
+    private static function apply_keywords( $content, $km, $add, $source = '' ) {
         foreach ( $km as $keyword => $keys ) {
             if ( stripos( $content, $keyword ) !== false ) {
                 foreach ( $keys as $ck ) $add( $ck, $source ?: 'HTML:' . $keyword );

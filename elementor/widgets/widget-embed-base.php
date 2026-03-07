@@ -15,17 +15,17 @@ abstract class DCB_Widget_Embed_Base extends \Elementor\Widget_Base {
     public function get_script_depends() { return array( 'dcb-embeds' ); }
 
     /** Kindklassen geben den Embed-Typ zurück (z.B. 'youtube') */
-    abstract protected function get_embed_type(): string;
+    abstract protected function get_embed_type();
 
     /** Kindklassen registrieren Quell-Controls (id, src, url, lat/lng…) */
-    abstract protected function register_source_controls(): void;
+    abstract protected function register_source_controls();
 
     /** Kindklassen bauen den Shortcode-String zusammen */
-    abstract protected function build_shortcode( array $s ): string;
+    abstract protected function build_shortcode( $s );
 
     /* ── Gemeinsame Controls ── */
 
-    protected function register_controls(): void {
+    protected function register_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         // Quell-Sektion (von Kindklasse befüllt)
@@ -111,13 +111,13 @@ abstract class DCB_Widget_Embed_Base extends \Elementor\Widget_Base {
         $this->end_controls_section();
     }
 
-    protected function render(): void {
+    protected function render() {
         $s = $this->get_settings_for_display();
         echo do_shortcode( $this->build_shortcode( $s ) );
     }
 
     /* ── Hilfs-Methode: Breite/Höhe aus Elementor-Slider → String ── */
-    protected function size_string( $control_value, string $default ): string {
+    protected function size_string( $control_value, $default ) {
         if ( empty( $control_value['size'] ) ) return $default;
         return $control_value['size'] . $control_value['unit'];
     }

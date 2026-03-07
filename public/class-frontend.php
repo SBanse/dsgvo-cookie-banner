@@ -65,7 +65,7 @@ class DCB_Frontend {
     }
 
     public function render_banner() {
-        echo '<div id="dcb-banner-root" aria-live="polite" aria-label="' . esc_attr( DCB_I18n::t('aria_dialog_label') ) . '"></div>';'
+        echo '<div id="dcb-banner-root" aria-live="polite" aria-label="' . esc_attr( DCB_I18n::t('aria_dialog_label') ) . '"></div>';
     }
 
     /**
@@ -78,7 +78,7 @@ class DCB_Frontend {
      * Das Token wird serverseitig gegen einen Transient validiert.
      * So kann kein Dritter diese Funktion missbrauchen.
      */
-    public function maybe_inject_scan_reporter(): void {
+    public function maybe_inject_scan_reporter() {
         $token = sanitize_text_field( $_GET['dcb_browser_scan'] ?? '' );
         if ( empty( $token ) ) return;
 

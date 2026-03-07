@@ -10,9 +10,9 @@ class DCB_Widget_Facebook extends DCB_Widget_Embed_Base {
         return array_merge( parent::get_keywords(), array( 'facebook', 'fb', 'social', 'post' ) );
     }
 
-    protected function get_embed_type(): string { return 'facebook'; }
+    protected function get_embed_type() { return 'facebook'; }
 
-    protected function register_source_controls(): void {
+    protected function register_source_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         $this->add_control( 'post_url', array(
@@ -26,7 +26,7 @@ class DCB_Widget_Facebook extends DCB_Widget_Embed_Base {
         ) );
     }
 
-    protected function build_shortcode( array $s ): string {
+    protected function build_shortcode( $s ) {
         $url    = ! empty( $s['post_url'] )  ? ' url="'    . esc_attr( $s['post_url'] )  . '"' : '';
         $width  = $this->size_string( $s['embed_width']  ?? array(), '100%' );
         $height = $this->size_string( $s['embed_height'] ?? array(), '400px' );

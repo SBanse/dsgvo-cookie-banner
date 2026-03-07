@@ -425,7 +425,7 @@ class DCB_Admin {
 
     /* ── Embed AJAX handlers ───────────────────────────────────────────────── */
 
-    private function verify_nonce(): bool {
+    private function verify_nonce() {
         return wp_verify_nonce( $_POST['nonce'] ?? '', 'dcb_admin_nonce' )
             && current_user_can( 'manage_options' );
     }

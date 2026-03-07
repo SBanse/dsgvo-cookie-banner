@@ -10,9 +10,9 @@ class DCB_Widget_YouTube extends DCB_Widget_Embed_Base {
         return array_merge( parent::get_keywords(), array( 'youtube', 'video' ) );
     }
 
-    protected function get_embed_type(): string { return 'youtube'; }
+    protected function get_embed_type() { return 'youtube'; }
 
-    protected function register_source_controls(): void {
+    protected function register_source_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         $this->add_control( 'video_id', array(
@@ -34,7 +34,7 @@ class DCB_Widget_YouTube extends DCB_Widget_Embed_Base {
         ) );
     }
 
-    protected function build_shortcode( array $s ): string {
+    protected function build_shortcode( $s ) {
         $id        = ! empty( $s['video_id'] )           ? ' id="'        . esc_attr( $s['video_id'] ) . '"'          : '';
         $thumb     = ! empty( $s['custom_thumbnail']['url'] ) ? ' thumbnail="' . esc_attr( $s['custom_thumbnail']['url'] ) . '"' : '';
         $width     = $this->size_string( $s['embed_width']  ?? array(), '100%' );

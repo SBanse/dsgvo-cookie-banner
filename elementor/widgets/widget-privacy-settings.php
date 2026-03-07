@@ -13,7 +13,7 @@ class DCB_Widget_Privacy_Settings extends \Elementor\Widget_Base {
     public function get_categories() { return array( DCB_Elementor_Integration::CATEGORY ); }
     public function get_keywords()   { return array( 'cookie', 'dsgvo', 'gdpr', 'settings', 'einstellungen', 'datenschutz' ); }
 
-    protected function register_controls(): void {
+    protected function register_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         /* ── Inhalt ── */
@@ -86,7 +86,7 @@ class DCB_Widget_Privacy_Settings extends \Elementor\Widget_Base {
         $this->end_controls_section();
     }
 
-    protected function render(): void {
+    protected function render() {
         $s    = $this->get_settings_for_display();
         $text = ! empty( $s['button_text'] ) ? esc_attr( $s['button_text'] ) : '';
         if ( $s['button_type'] === 'banner' ) {

@@ -12,7 +12,7 @@ class DCB_Elementor_Integration {
     /** Widget-Kategorien-Slug */
     const CATEGORY = 'dcb-widgets';
 
-    public static function init(): void {
+    public static function init() {
         // Warten bis Elementor bereit ist
         add_action( 'elementor/widgets/register', array( __CLASS__, 'register_widgets' ) );
         add_action( 'elementor/elements/categories_registered', array( __CLASS__, 'register_category' ) );
@@ -23,7 +23,7 @@ class DCB_Elementor_Integration {
      *
      * @param \Elementor\Elements_Manager $manager
      */
-    public static function register_category( $manager ): void {
+    public static function register_category( $manager ) {
         $manager->add_category( self::CATEGORY, array(
             'title' => '🍪 DSGVO Cookie Banner',
             'icon'  => 'fa fa-shield',
@@ -35,7 +35,7 @@ class DCB_Elementor_Integration {
      *
      * @param \Elementor\Widgets_Manager $manager
      */
-    public static function register_widgets( $manager ): void {
+    public static function register_widgets( $manager ) {
         require_once __DIR__ . '/widgets/widget-embed-base.php';
         require_once __DIR__ . '/widgets/widget-cookie-list.php';
         require_once __DIR__ . '/widgets/widget-privacy-settings.php';

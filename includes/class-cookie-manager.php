@@ -88,7 +88,7 @@ class DCB_Cookie_Manager {
      * Returns default categories translated for the given language.
      * Falls back to DE if i18n not yet loaded.
      */
-    public static function default_categories( string $lang = '' ): array {
+    public static function default_categories( $lang = '' ) {
         // If i18n is already loaded, use it; otherwise inline strings
         if ( class_exists( 'DCB_I18n' ) && DCB_I18n::get_lang() ) {
             $l = $lang ?: DCB_I18n::get_lang();
@@ -127,7 +127,7 @@ class DCB_Cookie_Manager {
      * Returns just the translatable text defaults for a specific language
      * (used when detecting whether the user customised the texts).
      */
-    public static function default_settings_for_lang( string $lang ): array {
+    public static function default_settings_for_lang( $lang ) {
         $map = array(
             'de' => array(
                 'banner_title'          => 'Wir verwenden Cookies',
@@ -162,7 +162,7 @@ class DCB_Cookie_Manager {
      * @param array  $data    Neue Felder (name, category, provider, purpose, duration)
      * @return bool           true wenn gespeichert, false bei Fehler
      */
-    public static function update_cookie_entry( string $key, array $data ): bool {
+    public static function update_cookie_entry( $key, $data ) {
         // Felder bereinigen
         $clean = array(
             'name'     => sanitize_text_field( $data['name']     ?? '' ),
@@ -195,7 +195,7 @@ class DCB_Cookie_Manager {
      * @param string $key  Interner Schlüssel
      * @return bool
      */
-    public static function delete_cookie_entry( string $key ): bool {
+    public static function delete_cookie_entry( $key ) {
         $stored = self::get_detected_cookies();
         $changed = false;
 

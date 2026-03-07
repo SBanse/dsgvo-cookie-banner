@@ -10,9 +10,9 @@ class DCB_Widget_Twitter extends DCB_Widget_Embed_Base {
         return array_merge( parent::get_keywords(), array( 'twitter', 'x', 'tweet', 'social' ) );
     }
 
-    protected function get_embed_type(): string { return 'twitter'; }
+    protected function get_embed_type() { return 'twitter'; }
 
-    protected function register_source_controls(): void {
+    protected function register_source_controls() {
         $de = DCB_I18n::get_lang() === 'de';
 
         $this->add_control( 'tweet_url', array(
@@ -34,7 +34,7 @@ class DCB_Widget_Twitter extends DCB_Widget_Embed_Base {
         ) );
     }
 
-    protected function build_shortcode( array $s ): string {
+    protected function build_shortcode( $s ) {
         $url = ! empty( $s['tweet_url'] ) ? ' url="' . esc_attr( $s['tweet_url'] ) . '"' : '';
         return "[dcb_twitter{$url}]";
     }

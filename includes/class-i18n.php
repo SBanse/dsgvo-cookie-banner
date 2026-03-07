@@ -20,7 +20,7 @@ class DCB_I18n {
     private static array $strings = array();
 
     /** Verfügbare Sprachen */
-    public static function available_languages(): array {
+    public static function available_languages() {
         return array(
             'de' => 'Deutsch',
             'en' => 'English',
@@ -30,7 +30,7 @@ class DCB_I18n {
     /**
      * Sprache initialisieren – muss früh aufgerufen werden (plugins_loaded).
      */
-    public static function init(): void {
+    public static function init() {
         $settings  = get_option( DCB_Cookie_Manager::OPTION_SETTINGS, array() );
         $saved     = $settings['plugin_language'] ?? '';
 
@@ -45,7 +45,7 @@ class DCB_I18n {
         self::$strings = self::load( self::$lang );
     }
 
-    public static function get_lang(): string {
+    public static function get_lang() {
         return self::$lang;
     }
 
@@ -54,21 +54,21 @@ class DCB_I18n {
      * @param string $key   Schlüssel aus dem Spracharray
      * @param string $default Fallback wenn Schlüssel fehlt
      */
-    public static function t( string $key, string $default = '' ): string {
+    public static function t( $key, $default = '' ) {
         return self::$strings[ $key ] ?? ( $default ?: $key );
     }
 
     /**
      * Gibt alle Strings als Array zurück (für wp_localize_script).
      */
-    public static function all(): array {
+    public static function all() {
         return self::$strings;
     }
 
     /**
      * Lädt die Strings für eine bestimmte Sprache.
      */
-    private static function load( string $lang ): array {
+    private static function load( $lang ) {
         $strings_de = array(
             // ── Banner (Frontend) ────────────────────────────────────────────
             'banner_title'              => 'Wir verwenden Cookies',
