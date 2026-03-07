@@ -12,7 +12,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'DCB_VERSION',     '1.3.0' );
+define( 'DCB_VERSION',     '2.0.0' );
 define( 'DCB_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'DCB_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 define( 'DCB_PLUGIN_FILE', __FILE__ );
